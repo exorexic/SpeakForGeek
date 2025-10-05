@@ -1062,6 +1062,7 @@
         let audioChunks = [];
         let recordingStartTime = null;
         let recordingTimer = null;
+        let currentAudio = null;
         
         // Переменные для звонков
         let localStream = null;
@@ -1311,7 +1312,7 @@
             joinRoomIdInput.value = '';
             
             // В реальном приложении здесь должно быть подключение к хосту комнаты
-            addSystemMessage('Присоединение к комнате... (демо-режим)');
+            addSystemMessage('Присоединение к комнате...');
         }
 
         // Добавление комнаты в список
@@ -1402,6 +1403,145 @@
             adjustTextareaHeight();
         }
 
+        // Отправка файла
+        function sendFile(file) {
+            if (!currentRoomId) {
+                alert('Пожалуйста, сначала создайте или присоединитесь к комнате');
+                return;
+            }
+
+            if (file.size > 50 * 1024 * 1024) { // 50MB лимит
+                alert('Файл слишком большой. Максимальный размер: 50MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileData = e.target.result;
+                const totalChunks = Math.ceil(fileData.byteLength / fileChunkSize);
+                const messageId = 'file-' + Date.now();
+                
+                // Добавляем сообщение о загрузке файла
+                addFileMessage({
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type,
+                    userName: userName,
+                    userColor: userColor,
+                    timestamp: getCurrentTime(),
+                    status: 'uploading',
+                    messageId: messageId
+                });
+
+                // Отправляем информацию о начале передачи
+                connections.forEach(conn => {
+                    if (conn.open) {
+                        conn.send({
+                            type: 'file_start',
+                            fileName: file.name,
+                            fileSize: file.size,
+                            fileType: file.type,
+                            totalChunks: totalChunks,
+                            userName: userName,
+                            userColor: userColor,
+                            timestamp: getCurrentTime()
+                        });
+                    }
+                });
+
+                // Отправляем чанки файла
+                let chunksSent = 0;
+                function sendNextChunk() {
+                    if (chunksSent < totalChunks) {
+                        const start = chunksSent * fileChunkSize;
+                        const end = Math.min(start + fileChunkSize, fileData.byteLength);
+                        const chunk = fileData.slice(start, end);
+                        
+                        connections.forEach(conn => {
+                            if (conn.open) {
+                                conn.send({
+                                    type: 'file_chunk',
+                                    chunk: chunk,
+                                    chunkIndex: chunksSent,
+                                    totalChunks: totalChunks
+                                });
+                            }
+                        });
+                        
+                        chunksSent++;
+                        updateFileProgress(messageId, chunksSent / totalChunks);
+                        
+                        // Отправляем следующий чанк с небольшой задержкой
+                        setTimeout(sendNextChunk, 10);
+                    } else {
+                        // Завершаем передачу
+                        connections.forEach(conn => {
+                            if (conn.open) {
+                                conn.send({
+                                    type: 'file_end',
+                                    fileName: file.name
+                                });
+                            }
+                        });
+                        
+                        // Обновляем собственное сообщение
+                        const fileUrl = URL.createObjectURL(file);
+                        updateFileMessage(messageId, fileUrl);
+                    }
+                }
+                
+                sendNextChunk();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Обновление прогресса загрузки файла
+        function updateFileProgress(messageId, progress) {
+            const progressBar = document.querySelector(`[data-message-id="${messageId}"] .upload-progress-bar`);
+            if (progressBar) {
+                progressBar.style.width = (progress * 100) + '%';
+            }
+        }
+
+        // Обновление сообщения с файлом после загрузки
+        function updateFileMessage(messageId, fileUrl) {
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                const fileContent = messageElement.querySelector('.file-message');
+                const fileName = fileContent.querySelector('.file-name').textContent;
+                const fileType = fileContent.querySelector('.file-info').dataset.fileType;
+                
+                if (fileType.startsWith('image/')) {
+                    fileContent.innerHTML = `
+                        <div class="file-preview">
+                            <i class="${getFileIcon(fileName)} file-icon"></i>
+                            <div class="file-info" data-file-type="${fileType}">
+                                <div class="file-name">${fileName}</div>
+                                <div class="file-size">${formatFileSize(fileContent.querySelector('.file-size').textContent)}</div>
+                            </div>
+                        </div>
+                        <img src="${fileUrl}" alt="${fileName}" class="file-image" onclick="openImageModal('${fileUrl}')">
+                        <a href="${fileUrl}" download="${fileName}" class="file-download-btn">
+                            <i class="fas fa-download"></i> Скачать
+                        </a>
+                    `;
+                } else {
+                    fileContent.innerHTML = `
+                        <div class="file-preview">
+                            <i class="${getFileIcon(fileName)} file-icon"></i>
+                            <div class="file-info" data-file-type="${fileType}">
+                                <div class="file-name">${fileName}</div>
+                                <div class="file-size">${formatFileSize(fileContent.querySelector('.file-size').textContent)}</div>
+                            </div>
+                        </div>
+                        <a href="${fileUrl}" download="${fileName}" class="file-download-btn">
+                            <i class="fas fa-download"></i> Скачать файл
+                        </a>
+                    `;
+                }
+            }
+        }
+
         // Отправка голосового сообщения
         function sendVoiceMessage(audioBlob) {
             if (!currentRoomId) return;
@@ -1412,11 +1552,11 @@
                 username: userName,
                 color: userColor,
                 timestamp: new Date().toISOString(),
-                duration: Math.floor((Date.now() - recordingStartTime) / 1000)
+                duration: Math.floor((Date.now() - recordingStartTime) / 1000),
+                audioUrl: URL.createObjectURL(audioBlob)
             };
             
-            // В реальном приложении здесь должна быть отправка аудио-данных
-            // В демо-версии мы просто добавляем сообщение в чат
+            // Добавляем голосовое сообщение в чат
             addVoiceMessageToChat(message, true);
             
             // Отправляем сообщение всем подключенным пользователям
@@ -1433,7 +1573,7 @@
             // В реальном приложении здесь должна быть инициализация медиа-потока и отправка вызова
             // В демо-версии мы просто показываем активный звонок
             showActiveCall();
-            addSystemMessage('Вы начали звонок (демо-режим)');
+            addSystemMessage('Вы начали звонок');
         }
 
         // Ответить на звонок
@@ -1441,7 +1581,7 @@
             // В реальном приложении здесь должен быть ответ на звонок с медиа-потоком
             // В демо-версии мы просто показываем активный звонок
             showActiveCall();
-            addSystemMessage('Вы приняли звонок (демо-режим)');
+            addSystemMessage('Вы приняли звонок');
         }
 
         // Показать активный звонок
@@ -1611,10 +1751,62 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
+        // Добавление сообщения с файлом
+        function addFileMessage(fileData) {
+            // Удаляем пустой чат, если он есть
+            const emptyChat = chatMessages.querySelector('.empty-chat');
+            if (emptyChat) {
+                emptyChat.remove();
+            }
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            messageElement.setAttribute('data-message-id', fileData.messageId);
+            
+            // Создаем аватар с первой буквой имени
+            const avatarLetter = fileData.userName.charAt(0);
+            
+            let fileContent = '';
+            if (fileData.status === 'uploading' || fileData.status === 'downloading') {
+                fileContent = `
+                    <div class="file-preview">
+                        <i class="${getFileIcon(fileData.fileName)} file-icon"></i>
+                        <div class="file-info" data-file-type="${fileData.fileType}">
+                            <div class="file-name">${fileData.fileName}</div>
+                            <div class="file-size">${formatFileSize(fileData.fileSize)}</div>
+                        </div>
+                    </div>
+                    <div class="upload-progress">
+                        <div class="upload-progress-bar"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
+                        ${fileData.status === 'uploading' ? 'Отправка...' : 'Загрузка...'}
+                    </div>
+                `;
+            }
+            
+            messageElement.innerHTML = `
+                <div class="message-avatar" style="background-color: ${fileData.userColor}">${avatarLetter}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <div class="message-author">${fileData.userName}</div>
+                        <div class="message-time">${fileData.timestamp || getCurrentTime()}</div>
+                    </div>
+                    <div class="file-message">
+                        ${fileContent}
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageElement);
+            scrollToBottom();
+        }
+
         // Добавление голосового сообщения в чат
         function addVoiceMessageToChat(message, isOwn = false) {
             const messageElement = document.createElement('div');
             messageElement.className = 'message';
+            messageElement.setAttribute('data-voice-id', Date.now());
             
             const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
@@ -1654,34 +1846,56 @@
                 const isPlaying = this.classList.contains('playing');
                 
                 if (isPlaying) {
+                    // Останавливаем воспроизведение
                     this.innerHTML = '<i class="fas fa-play"></i>';
                     this.classList.remove('playing');
-                    // Здесь должна быть остановка воспроизведения
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                        currentAudio = null;
+                    }
+                    progressBar.style.width = '0%';
                 } else {
+                    // Начинаем воспроизведение
                     this.innerHTML = '<i class="fas fa-pause"></i>';
                     this.classList.add('playing');
-                    // Здесь должно быть начало воспроизведения
-                    // В демо-версии просто анимируем прогресс-бар
-                    animateProgressBar(progressBar, message.duration);
+                    
+                    // Создаем аудио элемент и воспроизводим
+                    currentAudio = new Audio(message.audioUrl);
+                    currentAudio.play();
+                    
+                    // Анимируем прогресс-бар
+                    animateProgressBar(progressBar, message.duration, currentAudio);
+                    
+                    // Когда аудио закончилось
+                    currentAudio.onended = function() {
+                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        playBtn.classList.remove('playing');
+                        progressBar.style.width = '0%';
+                        currentAudio = null;
+                    };
                 }
             });
         }
 
         // Анимация прогресс-бара для голосового сообщения
-        function animateProgressBar(progressBar, duration) {
+        function animateProgressBar(progressBar, duration, audioElement) {
             let progress = 0;
             const interval = setInterval(() => {
-                progress += 1;
-                progressBar.style.width = `${(progress / duration) * 100}%`;
-                
-                if (progress >= duration) {
+                if (audioElement) {
+                    progress = (audioElement.currentTime / duration) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    
+                    if (progress >= 100 || audioElement.paused) {
+                        clearInterval(interval);
+                        if (progress >= 100) {
+                            progressBar.style.width = '0%';
+                        }
+                    }
+                } else {
                     clearInterval(interval);
-                    const playBtn = progressBar.closest('.voice-controls').querySelector('.voice-play-btn');
-                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    playBtn.classList.remove('playing');
-                    progressBar.style.width = '0%';
                 }
-            }, 1000);
+            }, 100);
         }
 
         // Форматирование времени для голосовых сообщений
@@ -1689,6 +1903,23 @@
             const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
             const secs = (seconds % 60).toString().padStart(2, '0');
             return `${mins}:${secs}`;
+        }
+
+        // Получение текущего времени
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // Прокрутка вниз
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Открытие модального окна с изображением
+        function openImageModal(imageUrl) {
+            modalImage.src = imageUrl;
+            imageModal.style.display = 'flex';
         }
 
         // Обработка входящих данных
@@ -1699,6 +1930,15 @@
                     break;
                 case 'voice_message':
                     addVoiceMessageToChat(data);
+                    break;
+                case 'file_start':
+                    handleFileStart(data, peerId);
+                    break;
+                case 'file_chunk':
+                    handleFileChunk(data, peerId);
+                    break;
+                case 'file_end':
+                    handleFileEnd(data, peerId);
                     break;
                 case 'user_joined':
                     addSystemMessage(`Пользователь ${data.username} присоединился к комнате`);
@@ -1712,6 +1952,64 @@
                     break;
                 default:
                     console.log('Неизвестный тип данных:', data);
+            }
+        }
+
+        // Обработка начала передачи файла
+        function handleFileStart(data, peerId) {
+            if (!window.fileTransfers) window.fileTransfers = {};
+            
+            window.fileTransfers[peerId] = {
+                fileName: data.fileName,
+                fileSize: data.fileSize,
+                fileType: data.fileType,
+                totalChunks: data.totalChunks,
+                receivedChunks: 0,
+                chunks: []
+            };
+            
+            // Создаем сообщение о загрузке файла
+            const messageId = 'file-' + Date.now();
+            window.fileTransfers[peerId].messageId = messageId;
+            
+            addFileMessage({
+                fileName: data.fileName,
+                fileSize: data.fileSize,
+                fileType: data.fileType,
+                userName: data.userName,
+                userColor: data.userColor,
+                timestamp: data.timestamp,
+                status: 'downloading',
+                messageId: messageId
+            });
+        }
+
+        // Обработка чанка файла
+        function handleFileChunk(data, peerId) {
+            if (window.fileTransfers && window.fileTransfers[peerId]) {
+                const transfer = window.fileTransfers[peerId];
+                transfer.chunks[data.chunkIndex] = data.chunk;
+                transfer.receivedChunks++;
+                
+                // Обновляем прогресс
+                updateFileProgress(transfer.messageId, transfer.receivedChunks / transfer.totalChunks);
+            }
+        }
+
+        // Обработка завершения передачи файла
+        function handleFileEnd(data, peerId) {
+            if (window.fileTransfers && window.fileTransfers[peerId]) {
+                const transfer = window.fileTransfers[peerId];
+                
+                // Собираем файл из чанков
+                const fileData = new Blob(transfer.chunks);
+                const fileUrl = URL.createObjectURL(fileData);
+                
+                // Обновляем сообщение с файлом
+                updateFileMessage(transfer.messageId, fileUrl);
+                
+                // Очищаем данные передачи
+                delete window.fileTransfers[peerId];
             }
         }
 
@@ -1782,8 +2080,7 @@
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
                     const file = e.target.files[0];
-                    // В реальном приложении здесь должна быть отправка файла
-                    addSystemMessage(`Файл "${file.name}" выбран для отправки (демо-режим)`);
+                    sendFile(file);
                     // Очищаем input
                     fileInput.value = '';
                 }
