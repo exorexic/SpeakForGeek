@@ -1,6 +1,6 @@
 # SpeakForGeek - Простой P2P Мессенджер
 
-![Image alt](https://raw.githubusercontent.com/exorexic/SpeakForGeek/refs/heads/main/index.html)
+![Image alt](https://raw.githubusercontent.com/exorexic/SpeakForGeek/refs/heads/main/assets/IMG_20251005_111915_171.jpg)
 
 Что это такое?
 
