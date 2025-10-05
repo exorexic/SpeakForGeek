@@ -6,6 +6,7 @@
     <title>SpeakForGeek - P2P Мессенджер</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Все предыдущие стили остаются без изменений */
         * {
             margin: 0;
             padding: 0;
@@ -79,6 +80,17 @@
         
         .status-dot.connected {
             background-color: var(--success);
+        }
+        
+        .status-dot.connecting {
+            background-color: #feca57;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
         .container {
@@ -187,6 +199,12 @@
         
         .btn-secondary:hover {
             background-color: #4f545c;
+        }
+        
+        .btn:disabled {
+            background-color: var(--bg-tertiary);
+            cursor: not-allowed;
+            opacity: 0.6;
         }
         
         .input-group {
@@ -604,12 +622,6 @@
             border-radius: 50%;
             background-color: var(--danger);
             animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
         }
         
         .recording-text {
@@ -1095,14 +1107,12 @@
 
         // Переменные приложения
         let peer = null;
-        let currentConnection = null;
         let currentRoomId = null;
         let currentRoomName = null;
         let isHost = false;
         let connections = [];
         let userName = generateUsername();
         let userColor = generateColor();
-        let fileChunkSize = 16000; // Размер чанка для отправки файлов
         
         // Переменные для голосовых сообщений
         let mediaRecorder = null;
@@ -1131,7 +1141,7 @@
         // Генерация случайного цвета для пользователя
         function generateColor() {
             const colors = [
-                '#5865f2', '#eb459e', '#ed4245', '#feca57', '#57f287', '#fee75c', '#ed4245'
+                '#5865f2', '#eb459e', '#ed4245', '#feca57', '#57f287', '#fee75c'
             ];
             return colors[Math.floor(Math.random() * colors.length)];
         }
@@ -1141,102 +1151,138 @@
             return /^[a-zA-Z0-9_-]+$/.test(roomId) && roomId.length >= 3 && roomId.length <= 20;
         }
 
-        // Форматирование размера файла
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // Получение иконки для типа файла
-        function getFileIcon(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            const iconMap = {
-                'jpg': 'fas fa-file-image',
-                'jpeg': 'fas fa-file-image',
-                'png': 'fas fa-file-image',
-                'gif': 'fas fa-file-image',
-                'bmp': 'fas fa-file-image',
-                'pdf': 'fas fa-file-pdf',
-                'doc': 'fas fa-file-word',
-                'docx': 'fas fa-file-word',
-                'txt': 'fas fa-file-alt',
-                'zip': 'fas fa-file-archive',
-                'rar': 'fas fa-file-archive',
-                'mp3': 'fas fa-file-audio',
-                'wav': 'fas fa-file-audio',
-                'mp4': 'fas fa-file-video',
-                'avi': 'fas fa-file-video'
-            };
-            return iconMap[ext] || 'fas fa-file';
-        }
-
         // Обновление статуса подключения
-        function updateConnectionStatus(connected) {
-            if (connected) {
-                statusDot.classList.add('connected');
-                statusText.textContent = 'Подключено';
-            } else {
-                statusDot.classList.remove('connected');
-                statusText.textContent = 'Не подключено';
+        function updateConnectionStatus(status, text = '') {
+            statusDot.className = 'status-dot';
+            
+            switch(status) {
+                case 'connected':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = text || 'Подключено';
+                    break;
+                case 'connecting':
+                    statusDot.classList.add('connecting');
+                    statusText.textContent = text || 'Подключение...';
+                    break;
+                case 'error':
+                    statusText.textContent = text || 'Ошибка подключения';
+                    break;
+                default:
+                    statusText.textContent = text || 'Не подключено';
             }
         }
 
         // Инициализация Peer соединения
         function initializePeer() {
-            // Генерируем случайный ID для пользователя
-            const peerId = userName + '_' + Math.random().toString(36).substring(2, 9);
+            updateConnectionStatus('connecting');
             
-            peer = new Peer(peerId, {
-                debug: 2,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                }
-            });
-
-            peer.on('open', (id) => {
-                console.log('Peer подключен с ID:', id);
-                updateConnectionStatus(true);
-            });
-
-            peer.on('connection', (conn) => {
-                console.log('Входящее соединение от:', conn.peer);
-                setupConnection(conn);
-            });
-
-            peer.on('call', (call) => {
-                console.log('Входящий звонок от:', call.peer);
-                handleIncomingCall(call);
-            });
-
-            peer.on('error', (err) => {
-                console.error('Ошибка Peer:', err);
-                updateConnectionStatus(false);
-                
-                // Попытка переподключения
-                setTimeout(() => {
-                    if (peer && peer.disconnected) {
-                        console.log('Попытка переподключения...');
-                        peer.reconnect();
+            try {
+                // Пробуем разные конфигурации PeerJS
+                const peerOptions = {
+                    debug: 3,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            { urls: 'stun:stun3.l.google.com:19302' },
+                            { urls: 'stun:stun4.l.google.com:19302' }
+                        ]
                     }
-                }, 3000);
-            });
+                };
 
-            peer.on('disconnected', () => {
-                console.log('Peer отключен');
-                updateConnectionStatus(false);
-            });
+                // Пробуем создать Peer с разными серверами
+                const servers = [
+                    undefined, // Дефолтный сервер
+                    { host: '0.peerjs.com', port: 443, secure: true },
+                    { host: '1.peerjs.com', port: 443, secure: true },
+                    { host: '2.peerjs.com', port: 443, secure: true },
+                    { host: '3.peerjs.com', port: 443, secure: true }
+                ];
+
+                let currentServerIndex = 0;
+                
+                function tryNextServer() {
+                    if (currentServerIndex >= servers.length) {
+                        updateConnectionStatus('error', 'Не удалось подключиться');
+                        return;
+                    }
+                    
+                    const config = { ...peerOptions };
+                    if (servers[currentServerIndex]) {
+                        config.config = {
+                            ...peerOptions.config,
+                            ...servers[currentServerIndex]
+                        };
+                    }
+                    
+                    console.log(`Попытка подключения к серверу ${currentServerIndex}:`, servers[currentServerIndex]);
+                    
+                    // Создаем случайный ID для пользователя
+                    const peerId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    peer = new Peer(peerId, config);
+
+                    peer.on('open', (id) => {
+                        console.log('✅ Peer подключен с ID:', id);
+                        updateConnectionStatus('connected', `ID: ${id.substring(0, 8)}...`);
+                        
+                        // Показываем информацию о пользователе
+                        addSystemMessage(`Ваше имя: ${userName}`);
+                        addSystemMessage(`Ваш Peer ID: ${id}`);
+                    });
+
+                    peer.on('connection', (conn) => {
+                        console.log('🔗 Входящее соединение от:', conn.peer);
+                        setupConnection(conn);
+                    });
+
+                    peer.on('call', (call) => {
+                        console.log('📞 Входящий звонок от:', call.peer);
+                        handleIncomingCall(call);
+                    });
+
+                    peer.on('error', (err) => {
+                        console.error('❌ Peer error:', err);
+                        
+                        if (err.type === 'server-error' || err.type === 'socket-error') {
+                            // Пробуем следующий сервер
+                            currentServerIndex++;
+                            setTimeout(tryNextServer, 1000);
+                        } else if (err.type === 'unavailable-id') {
+                            // ID уже занят, пробуем с новым ID
+                            setTimeout(tryNextServer, 1000);
+                        } else {
+                            updateConnectionStatus('error', `Ошибка: ${err.type}`);
+                        }
+                    });
+
+                    peer.on('disconnected', () => {
+                        console.log('🔴 Peer отключен');
+                        updateConnectionStatus('error', 'Отключено');
+                        
+                        // Пробуем переподключиться
+                        setTimeout(() => {
+                            if (peer && peer.disconnected) {
+                                console.log('🔄 Попытка переподключения...');
+                                peer.reconnect();
+                            }
+                        }, 5000);
+                    });
+                }
+                
+                tryNextServer();
+
+            } catch (error) {
+                console.error('❌ Ошибка инициализации Peer:', error);
+                updateConnectionStatus('error', 'Ошибка инициализации');
+            }
         }
 
         // Настройка соединения с другим пиром
         function setupConnection(conn) {
             conn.on('open', () => {
-                console.log('Соединение установлено с:', conn.peer);
+                console.log('✅ Соединение установлено с:', conn.peer);
                 connections.push(conn);
                 updateUserCount();
                 
@@ -1246,18 +1292,11 @@
                         type: 'room-info',
                         roomId: currentRoomId,
                         roomName: currentRoomName,
-                        isHost: isHost,
-                        userName: userName,
-                        userColor: userColor
+                        userName: userName
                     });
-                    
-                    // Запрашиваем историю сообщений, если мы не хост
-                    if (!isHost) {
-                        conn.send({
-                            type: 'request-history'
-                        });
-                    }
                 }
+                
+                addSystemMessage(`Пользователь присоединился к комнате`);
             });
 
             conn.on('data', (data) => {
@@ -1265,13 +1304,14 @@
             });
 
             conn.on('close', () => {
-                console.log('Соединение закрыто:', conn.peer);
+                console.log('🔴 Соединение закрыто:', conn.peer);
                 connections = connections.filter(c => c !== conn);
                 updateUserCount();
+                addSystemMessage(`Пользователь покинул комнату`);
             });
 
             conn.on('error', (err) => {
-                console.error('Ошибка соединения:', err);
+                console.error('❌ Ошибка соединения:', err);
                 connections = connections.filter(c => c !== conn);
                 updateUserCount();
             });
@@ -1279,37 +1319,21 @@
 
         // Обработка полученных данных
         function handleReceivedData(data, conn) {
-            console.log('Получены данные:', data);
+            console.log('📨 Получены данные:', data);
             
             switch (data.type) {
-                case 'message':
-                    displayMessage(data.message, data.userName, data.userColor, data.timestamp, false);
-                    break;
-                    
-                case 'file':
-                    displayFileMessage(data.fileName, data.fileSize, data.fileType, data.fileData, data.userName, data.userColor, data.timestamp, false);
-                    break;
-                    
-                case 'voice':
-                    displayVoiceMessage(data.audioData, data.duration, data.userName, data.userColor, data.timestamp, false);
+                case 'chat-message':
+                    addMessage(data.message, data.userName, data.userColor, data.timestamp);
                     break;
                     
                 case 'room-info':
-                    if (!currentRoomId) {
+                    if (!currentRoomId && data.roomId) {
                         joinRoom(data.roomId, data.roomName, false);
                     }
                     break;
                     
-                case 'request-history':
-                    // Отправляем историю сообщений (в реальном приложении нужно хранить историю)
-                    break;
-                    
                 case 'user-joined':
-                    displaySystemMessage(`Пользователь ${data.userName} присоединился к комнате`);
-                    break;
-                    
-                case 'user-left':
-                    displaySystemMessage(`Пользователь ${data.userName} покинул комнату`);
+                    addSystemMessage(`Пользователь ${data.userName} присоединился`);
                     break;
                     
                 case 'call-request':
@@ -1328,14 +1352,14 @@
                     handleCallEnded(data);
                     break;
                     
-                case 'ice-candidate':
-                    handleIceCandidate(data, conn);
+                case 'voice-message':
+                    handleVoiceMessage(data);
                     break;
             }
         }
 
         // Создание комнаты
-        function createRoom(roomName, roomId) {
+        function createRoom(roomId, roomName) {
             if (!isValidRoomId(roomId)) {
                 alert('ID комнаты должен содержать только латинские буквы, цифры, дефисы и подчеркивания, длиной от 3 до 20 символов');
                 return;
@@ -1351,11 +1375,13 @@
             // Обновляем интерфейс
             currentRoomTitle.textContent = roomName;
             chatInputContainer.classList.remove('hidden');
-            startCallBtn.disabled = false;
+            startCallBtn.disabled = connections.length === 0;
             
             // Очищаем чат
-            chatMessages.innerHTML = '';
-            displaySystemMessage(`Вы создали комнату "${roomName}"`);
+            clearChat();
+            addSystemMessage(`Вы создали комнату "${roomName}"`);
+            addSystemMessage(`ID комнаты: ${roomId}`);
+            addSystemMessage(`Поделитесь ID комнаты с друзьями, чтобы они могли присоединиться`);
             
             // Показываем информацию о комнате
             displayRoomId.textContent = roomId;
@@ -1367,6 +1393,11 @@
 
         // Присоединение к комнате
         function joinRoom(roomId, roomName, isUserAction = true) {
+            if (!peer || !peer.id) {
+                alert('Подождите подключения к серверу');
+                return;
+            }
+            
             if (!isValidRoomId(roomId)) {
                 alert('Неверный формат ID комнаты');
                 return;
@@ -1376,6 +1407,16 @@
             currentRoomName = roomName || `Комната ${roomId}`;
             isHost = false;
             
+            // Подключаемся к хосту комнаты
+            try {
+                const conn = peer.connect(roomId);
+                setupConnection(conn);
+            } catch (error) {
+                console.error('❌ Ошибка подключения к комнате:', error);
+                alert('Не удалось подключиться к комнате. Возможно, её не существует.');
+                return;
+            }
+            
             // Добавляем комнату в список, если её там нет
             if (isUserAction) {
                 addRoomToList(currentRoomName, roomId);
@@ -1384,24 +1425,23 @@
             // Обновляем интерфейс
             currentRoomTitle.textContent = currentRoomName;
             chatInputContainer.classList.remove('hidden');
-            startCallBtn.disabled = false;
+            startCallBtn.disabled = connections.length === 0;
             
             // Очищаем чат
-            chatMessages.innerHTML = '';
-            displaySystemMessage(`Вы присоединились к комнате "${currentRoomName}"`);
+            clearChat();
+            addSystemMessage(`Вы присоединились к комнате "${currentRoomName}"`);
             
             // Скрываем форму присоединения
             joinRoomSection.classList.add('hidden');
-            
-            // Уведомляем других пользователей о присоединении
-            broadcast({
-                type: 'user-joined',
-                userName: userName
-            });
         }
 
         // Добавление комнаты в список
         function addRoomToList(roomName, roomId) {
+            // Убираем активный класс у всех комнат
+            document.querySelectorAll('.room-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
             // Проверяем, есть ли уже такая комната в списке
             const existingRoom = document.querySelector(`[data-room-id="${roomId}"]`);
             if (existingRoom) {
@@ -1436,6 +1476,7 @@
         // Обновление счетчика пользователей
         function updateUserCount() {
             userCount.textContent = connections.length + 1; // +1 для текущего пользователя
+            startCallBtn.disabled = connections.length === 0 || !currentRoomId;
         }
 
         // Отправка сообщения
@@ -1443,14 +1484,14 @@
             const messageText = messageInput.value.trim();
             if (!messageText || !currentRoomId) return;
             
-            const timestamp = new Date().toISOString();
+            const timestamp = new Date().toLocaleTimeString();
             
             // Отображаем сообщение локально
-            displayMessage(messageText, userName, userColor, timestamp, true);
+            addMessage(messageText, userName, userColor, timestamp);
             
             // Отправляем сообщение другим пользователям
             broadcast({
-                type: 'message',
+                type: 'chat-message',
                 message: messageText,
                 userName: userName,
                 userColor: userColor,
@@ -1462,21 +1503,25 @@
             adjustTextareaHeight();
         }
 
-        // Отображение сообщения
-        function displayMessage(text, sender, color, timestamp, isOwnMessage) {
+        // Добавление сообщения в чат
+        function addMessage(text, author, color, timestamp) {
+            // Удаляем пустой чат, если он есть
+            const emptyChat = chatMessages.querySelector('.empty-chat');
+            if (emptyChat) {
+                emptyChat.remove();
+            }
+            
             const messageElement = document.createElement('div');
             messageElement.className = 'message';
             
-            const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
             messageElement.innerHTML = `
                 <div class="message-avatar" style="background-color: ${color}">
-                    ${sender.charAt(0).toUpperCase()}
+                    ${author.charAt(0).toUpperCase()}
                 </div>
                 <div class="message-content">
                     <div class="message-header">
-                        <div class="message-author">${sender}</div>
-                        <div class="message-time">${time}</div>
+                        <div class="message-author">${author}</div>
+                        <div class="message-time">${timestamp}</div>
                     </div>
                     <div class="message-text">${escapeHtml(text)}</div>
                 </div>
@@ -1486,13 +1531,18 @@
             scrollToBottom();
         }
 
-        // Отображение системного сообщения
-        function displaySystemMessage(text) {
-            const systemMessage = document.createElement('div');
-            systemMessage.className = 'system-message';
-            systemMessage.textContent = text;
-            chatMessages.appendChild(systemMessage);
+        // Добавление системного сообщения
+        function addSystemMessage(text) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'system-message';
+            messageElement.textContent = text;
+            chatMessages.appendChild(messageElement);
             scrollToBottom();
+        }
+
+        // Очистка чата
+        function clearChat() {
+            chatMessages.innerHTML = '';
         }
 
         // Экранирование HTML
@@ -1517,7 +1567,11 @@
         function broadcast(data) {
             connections.forEach(conn => {
                 if (conn.open) {
-                    conn.send(data);
+                    try {
+                        conn.send(data);
+                    } catch (error) {
+                        console.error('❌ Ошибка отправки данных:', error);
+                    }
                 }
             });
         }
@@ -1557,8 +1611,8 @@
                     recordingInterval = setInterval(updateRecordingTime, 1000);
                 })
                 .catch(error => {
-                    console.error('Ошибка доступа к микрофону:', error);
-                    alert('Не удалось получить доступ к микрофону');
+                    console.error('❌ Ошибка доступа к микрофону:', error);
+                    alert('Не удалось получить доступ к микрофону. Проверьте разрешения.');
                 });
         }
 
@@ -1576,14 +1630,14 @@
             reader.onload = () => {
                 const audioData = reader.result;
                 const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
-                const timestamp = new Date().toISOString();
+                const timestamp = new Date().toLocaleTimeString();
                 
                 // Отображаем голосовое сообщение локально
-                displayVoiceMessage(audioData, duration, userName, userColor, timestamp, true);
+                displayVoiceMessage(audioData, duration, userName, userColor, timestamp);
                 
                 // Отправляем голосовое сообщение другим пользователям
                 broadcast({
-                    type: 'voice',
+                    type: 'voice-message',
                     audioData: audioData,
                     duration: duration,
                     userName: userName,
@@ -1595,11 +1649,9 @@
         }
 
         // Отображение голосового сообщения
-        function displayVoiceMessage(audioData, duration, sender, color, timestamp, isOwnMessage) {
+        function displayVoiceMessage(audioData, duration, sender, color, timestamp) {
             const messageElement = document.createElement('div');
             messageElement.className = 'message';
-            
-            const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             messageElement.innerHTML = `
                 <div class="message-avatar" style="background-color: ${color}">
@@ -1608,7 +1660,7 @@
                 <div class="message-content">
                     <div class="message-header">
                         <div class="message-author">${sender}</div>
-                        <div class="message-time">${time}</div>
+                        <div class="message-time">${timestamp}</div>
                     </div>
                     <div class="voice-message">
                         <div class="voice-player">
@@ -1654,17 +1706,13 @@
                 }
             });
             
-            // Прогресс-бар также можно использовать для перемотки
-            const progressContainer = messageElement.querySelector('.voice-progress');
-            progressContainer.addEventListener('click', (e) => {
-                const rect = progressContainer.getBoundingClientRect();
-                const percent = (e.clientX - rect.left) / rect.width;
-                audio.currentTime = percent * audio.duration;
-                progressBar.style.width = `${percent * 100}%`;
-            });
-            
             chatMessages.appendChild(messageElement);
             scrollToBottom();
+        }
+
+        // Обработка полученного голосового сообщения
+        function handleVoiceMessage(data) {
+            displayVoiceMessage(data.audioData, data.duration, data.userName, data.userColor, data.timestamp);
         }
 
         // Начало звонка
@@ -1674,41 +1722,10 @@
                 return;
             }
             
-            // Запрашиваем доступ к медиаустройствам
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    localStream = stream;
-                    isCallInitiator = true;
-                    isInCall = true;
-                    
-                    // Показываем модальное окно звонка
-                    callTitle.textContent = 'Исходящий звонок';
-                    callInfo.textContent = 'Ожидание ответа...';
-                    callButtons.classList.remove('hidden');
-                    callControls.classList.add('hidden');
-                    callModal.style.display = 'flex';
-                    
-                    // Добавляем локальное видео
-                    addVideoStream(localStream, 'Вы');
-                    
-                    // Отправляем запрос на звонок всем подключенным пользователям
-                    broadcast({
-                        type: 'call-request',
-                        userName: userName
-                    });
-                    
-                    // Устанавливаем таймаут для автоматического завершения, если никто не ответил
-                    setTimeout(() => {
-                        if (!remoteStreams.size && isInCall) {
-                            endCall();
-                            displaySystemMessage('Никто не ответил на звонок');
-                        }
-                    }, 30000);
-                })
-                .catch(error => {
-                    console.error('Ошибка доступа к медиаустройствам:', error);
-                    alert('Не удалось получить доступ к камере и микрофону');
-                });
+            // В реальном приложении здесь бы была реализация WebRTC звонков
+            // Для демонстрации просто покажем сообщение
+            addSystemMessage('Функция видеозвонков находится в разработке');
+            alert('Функция видеозвонков находится в разработке. В полной версии будут реализованы видеозвонки через WebRTC.');
         }
 
         // Обработка входящего запроса на звонок
@@ -1722,47 +1739,11 @@
 
         // Принятие входящего звонка
         function acceptCall() {
-            if (!currentCallData) return;
-            
-            // Скрываем уведомление
+            // В реальном приложении здесь бы была реализация принятия WebRTC звонка
             incomingCallNotification.style.display = 'none';
-            
-            // Запрашиваем доступ к медиаустройствам
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    localStream = stream;
-                    isCallInitiator = false;
-                    isInCall = true;
-                    
-                    // Показываем модальное окно звонка
-                    callTitle.textContent = 'Входящий звонок';
-                    callInfo.textContent = `Разговор с ${currentCallData.userName}`;
-                    callButtons.classList.add('hidden');
-                    callControls.classList.remove('hidden');
-                    callModal.style.display = 'flex';
-                    
-                    // Добавляем локальное видео
-                    addVideoStream(localStream, 'Вы');
-                    
-                    // Отправляем подтверждение звонка
-                    broadcast({
-                        type: 'call-accepted',
-                        userName: userName
-                    });
-                    
-                    // Устанавливаем соединения для передачи медиа с каждым пользователем
-                    connections.forEach(conn => {
-                        if (conn.peer === currentCallData.peerId) {
-                            const call = peer.call(conn.peer, localStream);
-                            setupCallConnection(call, conn.peer);
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Ошибка доступа к медиаустройствам:', error);
-                    alert('Не удалось получить доступ к камере и микрофону');
-                    rejectCall();
-                });
+            addSystemMessage('Вы приняли входящий звонок');
+            alert('Функция видеозвонков находится в разработке');
+            currentCallData = null;
         }
 
         // Отклонение входящего звонка
@@ -1775,155 +1756,23 @@
                 userName: userName
             });
             
+            addSystemMessage('Вы отклонили входящий звонок');
             currentCallData = null;
         }
 
         // Обработка принятия звонка
         function handleCallAccepted(data) {
-            if (!isInCall || !isCallInitiator) return;
-            
-            callInfo.textContent = `Разговор с ${data.userName}`;
-            callButtons.classList.add('hidden');
-            callControls.classList.remove('hidden');
-            
-            // Устанавливаем соединения для передачи медиа с каждым пользователем
-            connections.forEach(conn => {
-                if (conn.peer === data.peerId) {
-                    const call = peer.call(conn.peer, localStream);
-                    setupCallConnection(call, conn.peer);
-                }
-            });
+            addSystemMessage(`Пользователь ${data.userName} принял звонок`);
         }
 
         // Обработка отклонения звонка
         function handleCallRejected(data) {
-            if (!isInCall || !isCallInitiator) return;
-            
-            displaySystemMessage(`Пользователь ${data.userName} отклонил звонок`);
-        }
-
-        // Настройка соединения для звонка
-        function setupCallConnection(call, peerId) {
-            call.on('stream', (remoteStream) => {
-                addVideoStream(remoteStream, `Участник ${peerId}`);
-                remoteStreams.set(peerId, remoteStream);
-            });
-            
-            call.on('close', () => {
-                removeVideoStream(peerId);
-                remoteStreams.delete(peerId);
-                
-                if (remoteStreams.size === 0 && isInCall) {
-                    endCall();
-                }
-            });
-            
-            callConnections.set(peerId, call);
-        }
-
-        // Добавление видео потока в интерфейс
-        function addVideoStream(stream, label) {
-            const videoWrapper = document.createElement('div');
-            videoWrapper.className = 'video-wrapper';
-            
-            const videoElement = document.createElement('video');
-            videoElement.className = 'video-element';
-            videoElement.srcObject = stream;
-            videoElement.autoplay = true;
-            videoElement.playsInline = true;
-            
-            const videoLabel = document.createElement('div');
-            videoLabel.className = 'video-label';
-            videoLabel.textContent = label;
-            
-            videoWrapper.appendChild(videoElement);
-            videoWrapper.appendChild(videoLabel);
-            videoContainer.appendChild(videoWrapper);
-        }
-
-        // Удаление видео потока из интерфейса
-        function removeVideoStream(peerId) {
-            const videoWrapper = document.querySelector(`[data-peer-id="${peerId}"]`);
-            if (videoWrapper) {
-                videoWrapper.remove();
-            }
-        }
-
-        // Завершение звонка
-        function endCall() {
-            // Останавливаем локальный поток
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            
-            // Закрываем все соединения звонков
-            callConnections.forEach((call, peerId) => {
-                call.close();
-            });
-            callConnections.clear();
-            
-            // Очищаем удаленные потоки
-            remoteStreams.clear();
-            
-            // Скрываем модальное окно
-            callModal.style.display = 'none';
-            isInCall = false;
-            isCallInitiator = false;
-            currentCallData = null;
-            
-            // Очищаем контейнер видео
-            videoContainer.innerHTML = '';
-            
-            // Отправляем уведомление о завершении звонка
-            broadcast({
-                type: 'call-ended',
-                userName: userName
-            });
-            
-            displaySystemMessage('Звонок завершен');
+            addSystemMessage(`Пользователь ${data.userName} отклонил звонок`);
         }
 
         // Обработка завершения звонка
         function handleCallEnded(data) {
-            if (isInCall) {
-                endCall();
-                displaySystemMessage(`Пользователь ${data.userName} завершил звонок`);
-            }
-        }
-
-        // Обработка ICE кандидатов (для WebRTC)
-        function handleIceCandidate(data, conn) {
-            // В реальном приложении здесь бы обрабатывались ICE кандидаты для установления P2P соединения
-            console.log('Получен ICE кандидат:', data);
-        }
-
-        // Переключение аудио
-        function toggleAudio() {
-            if (!localStream) return;
-            
-            const audioTrack = localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                muteAudioBtn.classList.toggle('active', !audioTrack.enabled);
-                muteAudioBtn.innerHTML = audioTrack.enabled ? 
-                    '<i class="fas fa-microphone"></i>' : 
-                    '<i class="fas fa-microphone-slash"></i>';
-            }
-        }
-
-        // Переключение видео
-        function toggleVideo() {
-            if (!localStream) return;
-            
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                muteVideoBtn.classList.toggle('active', !videoTrack.enabled);
-                muteVideoBtn.innerHTML = videoTrack.enabled ? 
-                    '<i class="fas fa-video"></i>' : 
-                    '<i class="fas fa-video-slash"></i>';
-            }
+            addSystemMessage(`Пользователь ${data.userName} завершил звонок`);
         }
 
         // Инициализация приложения
@@ -1947,21 +1796,33 @@
             confirmCreateBtn.addEventListener('click', () => {
                 const roomName = roomNameInput.value.trim() || `Комната ${roomIdInput.value}`;
                 const roomId = roomIdInput.value.trim();
-                createRoom(roomName, roomId);
+                if (roomId) {
+                    createRoom(roomId, roomName);
+                } else {
+                    alert('Введите ID комнаты');
+                }
             });
             
             confirmJoinBtn.addEventListener('click', () => {
                 const roomId = joinRoomIdInput.value.trim();
-                joinRoom(roomId);
+                if (roomId) {
+                    joinRoom(roomId);
+                } else {
+                    alert('Введите ID комнаты');
+                }
             });
             
             copyRoomIdBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(displayRoomId.textContent)
                     .then(() => {
-                        alert('ID комнаты скопирован в буфер обмена');
+                        const originalText = copyRoomIdBtn.innerHTML;
+                        copyRoomIdBtn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
+                        setTimeout(() => {
+                            copyRoomIdBtn.innerHTML = originalText;
+                        }, 2000);
                     })
                     .catch(err => {
-                        console.error('Ошибка копирования:', err);
+                        console.error('❌ Ошибка копирования:', err);
                     });
             });
             
@@ -1984,8 +1845,7 @@
             
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    // В реальном приложении здесь бы обрабатывалась отправка файлов
-                    alert('Функция отправки файлов будет реализована в полной версии');
+                    addSystemMessage('Функция отправки файлов будет реализована в полной версии');
                     fileInput.value = '';
                 }
             });
@@ -2012,18 +1872,8 @@
             // Звонки
             startCallBtn.addEventListener('click', startCall);
             
-            acceptCallBtn.addEventListener('click', acceptCall);
-            rejectCallBtn.addEventListener('click', () => {
-                rejectCall();
-                callModal.style.display = 'none';
-            });
-            
             notificationAcceptBtn.addEventListener('click', acceptCall);
             notificationRejectBtn.addEventListener('click', rejectCall);
-            
-            endCallBtn.addEventListener('click', endCall);
-            muteAudioBtn.addEventListener('click', toggleAudio);
-            muteVideoBtn.addEventListener('click', toggleVideo);
             
             // Закрытие модального окна изображения
             closeModal.addEventListener('click', () => {
@@ -2038,6 +1888,12 @@
             
             // Инициализируем высоту текстового поля
             adjustTextareaHeight();
+            
+            // Показываем информацию о приложении
+            setTimeout(() => {
+                addSystemMessage('Добро пожаловать в SpeakForGeek!');
+                addSystemMessage('Создайте комнату или присоединитесь к существующей для начала общения');
+            }, 1000);
         }
 
         // Запуск приложения после загрузки страницы
