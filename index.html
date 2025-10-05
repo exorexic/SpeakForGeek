@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeakForGeek - P2P Мессенджер</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --bg-primary: #36393f;
+            --bg-secondary: #2f3136;
+            --bg-tertiary: #40444b;
+            --bg-accent: #5865f2;
+            --text-primary: #ffffff;
+            --text-secondary: #b9bbbe;
+            --text-accent: #00aff4;
+            --border-radius: 8px;
+            --success: #3ba55c;
+            --danger: #ed4245;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: var(--bg-secondary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo i {
+            color: var(--text-accent);
+            font-size: 1.8rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            background-color: var(--bg-tertiary);
+            padding: 6px 12px;
+            border-radius: var(--border-radius);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger);
+        }
+        
+        .status-dot.connected {
+            background-color: var(--success);
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 240px;
+            background-color: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+            padding: 15px 10px;
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        }
+        
+        .rooms-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            padding: 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .room-list {
+            list-style: none;
+        }
+        
+        .room-item {
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+        
+        .room-item:hover {
+            background-color: rgba(79, 84, 92, 0.4);
+        }
+        
+        .room-item.active {
+            background-color: rgba(79, 84, 92, 0.6);
+        }
+        
+        .room-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        
+        .room-name {
+            font-size: 1rem;
+        }
+        
+        .setup-section {
+            padding: 20px;
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+        }
+        
+        .setup-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-accent);
+        }
+        
+        .setup-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .btn {
+            background-color: var(--bg-accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: #4752c4;
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #4f545c;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--bg-accent);
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            display: flex;
+            gap: 15px;
+            padding: 5px 0;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--bg-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .message-author {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .message-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .message-text {
+            font-size: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        
+        .system-message {
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin: 10px 0;
+        }
+        
+        .chat-input-container {
+            padding: 15px 20px;
+            background-color: var(--bg-secondary);
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            background-color: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            padding: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            padding: 5px 10px;
+            resize: none;
+            max-height: 100px;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+        }
+        
+        .send-button {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+            transition: color 0.2s;
+        }
+        
+        .send-button:hover {
+            color: var(--text-primary);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .empty-chat i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--bg-tertiary);
+        }
+        
+        .empty-chat h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .empty-chat p {
+            font-size: 1rem;
+            max-width: 400px;
+        }
+        
+        .user-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                align-items: center;
+            }
+            
+            .room-name, .section-title {
+                display: none;
+            }
+            
+            .setup-section {
+                padding: 15px 10px;
+            }
+            
+            .logo h1 {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+            }
+            
+            .rooms-section {
+                margin-bottom: 0;
+                margin-right: 15px;
+            }
+            
+            .room-list {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .room-item {
+                margin-bottom: 0;
+                padding: 10px;
+            }
+            
+            .setup-section {
+                margin-top: 0;
+                margin-left: auto;
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-comments"></i>
+            <h1>SpeakForGeek</h1>
+        </div>
+        <div class="connection-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Не подключено</span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="rooms-section">
+                <div class="section-title">Текстовые каналы</div>
+                <ul class="room-list" id="roomList">
+                    <!-- Комнаты будут добавляться динамически -->
+                </ul>
+            </div>
+            
+            <div class="setup-section">
+                <div class="setup-title">Управление</div>
+                <div class="setup-buttons">
+                    <button class="btn" id="createRoomBtn">Создать комнату</button>
+                    <button class="btn btn-secondary" id="joinRoomBtn">Присоединиться</button>
+                </div>
+                
+                <div id="createRoomSection" class="hidden">
+                    <div class="input-group">
+                        <label class="input-label" for="roomNameInput">Название комнаты</label>
+                        <input type="text" id="roomNameInput" class="input-field" placeholder="Введите название">
+                    </div>
+                    <button class="btn" id="confirmCreateBtn">Создать</button>
+                </div>
+                
+                <div id="joinRoomSection" class="hidden">
+                    <div class="input-group">
+                        <label class="input-label" for="roomIdInput">ID комнаты</label>
+                        <input type="text" id="roomIdInput" class="input-field" placeholder="Введите ID комнаты">
+                    </div>
+                    <button class="btn" id="confirmJoinBtn">Присоединиться</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <i class="fas fa-hashtag"></i>
+                <div class="chat-title" id="currentRoomTitle">Выберите комнату</div>
+                <div class="user-count">
+                    <i class="fas fa-user"></i>
+                    <span id="userCount">0</span>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-chat">
+                    <i class="fas fa-comment-slash"></i>
+                    <h2>Добро пожаловать в SpeakForGeek!</h2>
+                    <p>Создайте новую комнату или присоединитесь к существующей, чтобы начать общение.</p>
+                </div>
+            </div>
+            
+            <div class="chat-input-container hidden" id="chatInputContainer">
+                <div class="chat-input-wrapper">
+                    <textarea class="chat-input" id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
+                    <button class="send-button" id="sendMessageBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключаем PeerJS библиотеку -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    
+    <script>
+        // Элементы DOM
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const roomList = document.getElementById('roomList');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const joinRoomBtn = document.getElementById('joinRoomBtn');
+        const createRoomSection = document.getElementById('createRoomSection');
+        const joinRoomSection = document.getElementById('joinRoomSection');
+        const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+        const confirmJoinBtn = document.getElementById('confirmJoinBtn');
+        const roomNameInput = document.getElementById('roomNameInput');
+        const roomIdInput = document.getElementById('roomIdInput');
+        const currentRoomTitle = document.getElementById('currentRoomTitle');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const chatInputContainer = document.getElementById('chatInputContainer');
+        const userCount = document.getElementById('userCount');
+
+        // Переменные приложения
+        let peer = null;
+        let currentConnection = null;
+        let currentRoomId = null;
+        let currentRoomName = null;
+        let isHost = false;
+        let connections = [];
+        let userName = generateUsername();
+        let userColor = generateColor();
+
+        // Генерация случайного имени пользователя
+        function generateUsername() {
+            const adjectives = ['Веселый', 'Умный', 'Смелый', 'Быстрый', 'Ловкий', 'Мудрый', 'Сильный', 'Хитрый'];
+            const nouns = ['Единорог', 'Феникс', 'Дракон', 'Волк', 'Тигр', 'Орел', 'Лев', 'Феникс'];
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const noun = nouns[Math.floor(Math.random() * nouns.length)];
+            const number = Math.floor(Math.random() * 1000);
+            return `${adj}${noun}${number}`;
+        }
+
+        // Генерация случайного цвета для пользователя
+        function generateColor() {
+            const colors = [
+                '#5865f2', '#eb459e', '#ed4245', '#feca57', '#57f287', '#fee75c', '#ed4245'
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Инициализация Peer соединения
+        function initializePeer() {
+            try {
+                peer = new Peer({
+                    debug: 2,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                peer.on('open', (id) => {
+                    console.log('Peer подключен с ID:', id);
+                    updateConnectionStatus(true, `ID: ${id.substring(0, 8)}...`);
+                });
+
+                peer.on('connection', (conn) => {
+                    console.log('Входящее соединение от:', conn.peer);
+                    setupConnection(conn);
+                    connections.push(conn);
+                    updateUserCount();
+                    
+                    // Отправляем информацию о текущей комнате новому пользователю
+                    if (currentRoomId) {
+                        conn.send({
+                            type: 'room_info',
+                            roomId: currentRoomId,
+                            roomName: currentRoomName,
+                            isHost: false
+                        });
+                        
+                        // Запрашиваем историю сообщений
+                        conn.send({
+                            type: 'request_history'
+                        });
+                    }
+                });
+
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    updateConnectionStatus(false, 'Ошибка подключения');
+                });
+
+            } catch (error) {
+                console.error('Ошибка инициализации Peer:', error);
+                updateConnectionStatus(false, 'Ошибка инициализации');
+            }
+        }
+
+        // Обновление статуса подключения
+        function updateConnectionStatus(connected, text) {
+            if (connected) {
+                statusDot.classList.add('connected');
+                statusText.textContent = text;
+            } else {
+                statusDot.classList.remove('connected');
+                statusText.textContent = text;
+            }
+        }
+
+        // Настройка соединения
+        function setupConnection(conn) {
+            conn.on('open', () => {
+                console.log('Соединение установлено с:', conn.peer);
+                addSystemMessage(`Пользователь присоединился к комнате`);
+            });
+
+            conn.on('data', (data) => {
+                console.log('Получены данные:', data);
+                
+                if (data.type === 'chat') {
+                    addMessage(data.message, data.userName, data.userColor, data.timestamp);
+                } else if (data.type === 'room_info') {
+                    joinRoom(data.roomId, data.roomName, false);
+                } else if (data.type === 'request_history') {
+                    // Отправляем историю сообщений
+                    const messages = chatMessages.querySelectorAll('.message:not(.system-message)');
+                    messages.forEach(msg => {
+                        const author = msg.querySelector('.message-author').textContent;
+                        const text = msg.querySelector('.message-text').textContent;
+                        const time = msg.querySelector('.message-time').textContent;
+                        const color = msg.querySelector('.message-avatar').style.backgroundColor;
+                        
+                        conn.send({
+                            type: 'chat_history',
+                            message: text,
+                            userName: author,
+                            userColor: color,
+                            timestamp: time
+                        });
+                    });
+                } else if (data.type === 'chat_history') {
+                    addMessage(data.message, data.userName, data.userColor, data.timestamp, true);
+                }
+            });
+
+            conn.on('close', () => {
+                console.log('Соединение закрыто:', conn.peer);
+                connections = connections.filter(c => c !== conn);
+                updateUserCount();
+                addSystemMessage(`Пользователь покинул комнату`);
+            });
+
+            conn.on('error', (err) => {
+                console.error('Connection error:', err);
+            });
+        }
+
+        // Создание комнаты
+        createRoomBtn.addEventListener('click', () => {
+            createRoomSection.classList.toggle('hidden');
+            joinRoomSection.classList.add('hidden');
+        });
+
+        // Присоединение к комнате
+        joinRoomBtn.addEventListener('click', () => {
+            joinRoomSection.classList.toggle('hidden');
+            createRoomSection.classList.add('hidden');
+        });
+
+        // Подтверждение создания комнаты
+        confirmCreateBtn.addEventListener('click', () => {
+            const roomName = roomNameInput.value.trim();
+            if (roomName) {
+                const roomId = generateRoomId();
+                createRoom(roomId, roomName);
+                createRoomSection.classList.add('hidden');
+                roomNameInput.value = '';
+            } else {
+                alert('Пожалуйста, введите название комнаты');
+            }
+        });
+
+        // Подтверждение присоединения к комнате
+        confirmJoinBtn.addEventListener('click', () => {
+            const roomId = roomIdInput.value.trim();
+            if (roomId) {
+                joinRoom(roomId, `Комната ${roomId.substring(0, 8)}`, false);
+                joinRoomSection.classList.add('hidden');
+                roomIdInput.value = '';
+            } else {
+                alert('Пожалуйста, введите ID комнаты');
+            }
+        });
+
+        // Генерация ID комнаты
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 10);
+        }
+
+        // Создание комнаты
+        function createRoom(roomId, roomName) {
+            currentRoomId = roomId;
+            currentRoomName = roomName;
+            isHost = true;
+            
+            // Инициализируем Peer, если еще не инициализирован
+            if (!peer) {
+                initializePeer();
+            }
+            
+            // Добавляем комнату в список
+            addRoomToList(roomId, roomName);
+            
+            // Активируем комнату
+            activateRoom(roomId);
+            
+            // Показываем поле ввода сообщений
+            chatInputContainer.classList.remove('hidden');
+            
+            // Очищаем чат и добавляем приветственное сообщение
+            clearChat();
+            addSystemMessage(`Вы создали комнату "${roomName}". ID комнаты: ${roomId}`);
+            addSystemMessage(`Поделитесь ID комнаты с друзьями, чтобы они могли присоединиться`);
+        }
+
+        // Присоединение к комнате
+        function joinRoom(roomId, roomName, isHostConnection = false) {
+            if (!peer) {
+                initializePeer();
+                // Ждем инициализации peer перед подключением
+                setTimeout(() => {
+                    connectToRoom(roomId, roomName, isHostConnection);
+                }, 1000);
+            } else {
+                connectToRoom(roomId, roomName, isHostConnection);
+            }
+        }
+
+        // Подключение к комнате
+        function connectToRoom(roomId, roomName, isHostConnection) {
+            currentRoomId = roomId;
+            currentRoomName = roomName;
+            isHost = isHostConnection;
+            
+            // Подключаемся к хосту
+            const conn = peer.connect(roomId);
+            setupConnection(conn);
+            connections.push(conn);
+            
+            // Добавляем комнату в список, если ее там нет
+            if (!isRoomInList(roomId)) {
+                addRoomToList(roomId, roomName);
+            }
+            
+            // Активируем комнату
+            activateRoom(roomId);
+            
+            // Показываем поле ввода сообщений
+            chatInputContainer.classList.remove('hidden');
+            
+            // Очищаем чат и добавляем приветственное сообщение
+            clearChat();
+            addSystemMessage(`Вы присоединились к комнате "${roomName}"`);
+        }
+
+        // Добавление комнаты в список
+        function addRoomToList(roomId, roomName) {
+            const roomItem = document.createElement('li');
+            roomItem.className = 'room-item';
+            roomItem.dataset.roomId = roomId;
+            
+            roomItem.innerHTML = `
+                <div class="room-icon">
+                    <i class="fas fa-hashtag"></i>
+                </div>
+                <div class="room-name">${roomName}</div>
+            `;
+            
+            roomItem.addEventListener('click', () => {
+                activateRoom(roomId);
+            });
+            
+            roomList.appendChild(roomItem);
+        }
+
+        // Проверка наличия комнаты в списке
+        function isRoomInList(roomId) {
+            return document.querySelector(`.room-item[data-room-id="${roomId}"]`) !== null;
+        }
+
+        // Активация комнаты
+        function activateRoom(roomId) {
+            // Снимаем активный класс со всех комнат
+            document.querySelectorAll('.room-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Добавляем активный класс выбранной комнате
+            const roomItem = document.querySelector(`.room-item[data-room-id="${roomId}"]`);
+            if (roomItem) {
+                roomItem.classList.add('active');
+                currentRoomTitle.textContent = roomItem.querySelector('.room-name').textContent;
+            }
+            
+            updateUserCount();
+        }
+
+        // Обновление счетчика пользователей
+        function updateUserCount() {
+            userCount.textContent = connections.length + 1; // +1 для текущего пользователя
+        }
+
+        // Очистка чата
+        function clearChat() {
+            chatMessages.innerHTML = '';
+        }
+
+        // Добавление системного сообщения
+        function addSystemMessage(text) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'system-message';
+            messageElement.textContent = text;
+            chatMessages.appendChild(messageElement);
+            scrollToBottom();
+        }
+
+        // Добавление сообщения в чат
+        function addMessage(text, author, color, timestamp, isHistory = false) {
+            // Удаляем пустой чат, если он есть
+            const emptyChat = chatMessages.querySelector('.empty-chat');
+            if (emptyChat) {
+                emptyChat.remove();
+            }
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            
+            // Создаем аватар с первой буквой имени
+            const avatarLetter = author.charAt(0);
+            
+            messageElement.innerHTML = `
+                <div class="message-avatar" style="background-color: ${color}">${avatarLetter}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <div class="message-author">${author}</div>
+                        <div class="message-time">${timestamp || getCurrentTime()}</div>
+                    </div>
+                    <div class="message-text">${text}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageElement);
+            
+            // Прокручиваем вниз только если это не история и сообщение новое
+            if (!isHistory) {
+                scrollToBottom();
+            }
+        }
+
+        // Получение текущего времени
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // Прокрутка вниз
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Отправка сообщения
+        sendMessageBtn.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+            
+            // Автоматическое увеличение высоты textarea
+            if (e.key === 'Enter' && e.shiftKey) {
+                // Разрешаем перенос строки
+                return;
+            }
+        });
+
+        // Автоматическое изменение высоты textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && currentRoomId) {
+                // Добавляем сообщение в свой чат
+                addMessage(message, userName, userColor, getCurrentTime());
+                
+                // Отправляем сообщение всем подключенным пользователям
+                connections.forEach(conn => {
+                    if (conn.open) {
+                        conn.send({
+                            type: 'chat',
+                            message: message,
+                            userName: userName,
+                            userColor: userColor,
+                            timestamp: getCurrentTime()
+                        });
+                    }
+                });
+                
+                // Очищаем поле ввода
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+            }
+        }
+
+        // Инициализация при загрузке
+        window.addEventListener('load', () => {
+            console.log('SpeakForGeek загружен');
+            initializePeer();
+            
+            // Устанавливаем имя пользователя в поле ввода для демонстрации
+            setTimeout(() => {
+                addSystemMessage(`Ваше имя пользователя: ${userName}`);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
