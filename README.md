@@ -4,6 +4,8 @@
 
 ![Image alt](https://raw.githubusercontent.com/exorexic/SpeakForGeek/refs/heads/main/assets/IMG_20251005_111915_171.jpg)
 
+Ссылка: https://exorexic.github.io/SpeakForGeek/
+
 Что это такое?
 
 SpeakForGeek - это мессенджер для переписки, который работает напрямую между пользователями без серверов. Создавайте комнаты, приглашайте друзей и общайтесь безопасно.
