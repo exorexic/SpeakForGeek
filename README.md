@@ -4,7 +4,7 @@
 
 ![Image alt](https://raw.githubusercontent.com/exorexic/SpeakForGeek/refs/heads/main/assets/IMG_20251005_111915_171.jpg)
 
-Ссылка: https://exorexic.github.io/SpeakForGeek/
+начать общаться прямо сейчас - https://exorexic.github.io/SpeakForGeek/
 
 Что это такое?
 
