@@ -1,5 +1,7 @@
 # SpeakForGeek - Простой P2P Мессенджер
 
+![Image alt](https://raw.githubusercontent.com/exorexic/SpeakForGreek/refs/heads/main/assets/IMG_20251005_111915_171.jpg)
+
 Что это такое?
 
 SpeakForGeek - это мессенджер для переписки, который работает напрямую между пользователями без серверов. Создавайте комнаты, приглашайте друзей и общайтесь безопасно.
