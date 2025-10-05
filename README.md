@@ -1,6 +1,6 @@
 # SpeakForGeek - Простой P2P Мессенджер
-![Image alt](https://img.shields.io/badge/SpeakForGeek-P2P%20Messenger-blue)
 ![Image alt](https://img.shields.io/badge/PeerJS-WebRTC-green)
+![Image alt](https://img.shields.io/badge/SpeakForGeek-P2P%20Messenger-blue)
 
 
 
