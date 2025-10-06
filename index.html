@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeakForGeek - P2P Мессенджер</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --bg-primary: #36393f;
+            --bg-secondary: #2f3136;
+            --bg-tertiary: #40444b;
+            --bg-accent: #5865f2;
+            --text-primary: #ffffff;
+            --text-secondary: #b9bbbe;
+            --text-accent: #00aff4;
+            --border-radius: 8px;
+            --success: #3ba55c;
+            --danger: #ed4245;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: var(--bg-secondary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo i {
+            color: var(--text-accent);
+            font-size: 1.8rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            background-color: var(--bg-tertiary);
+            padding: 6px 12px;
+            border-radius: var(--border-radius);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger);
+        }
+        
+        .status-dot.connected {
+            background-color: var(--success);
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 240px;
+            background-color: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+            padding: 15px 10px;
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        }
+        
+        .rooms-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            padding: 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .room-list {
+            list-style: none;
+        }
+        
+        .room-item {
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+        
+        .room-item:hover {
+            background-color: rgba(79, 84, 92, 0.4);
+        }
+        
+        .room-item.active {
+            background-color: rgba(79, 84, 92, 0.6);
+        }
+        
+        .room-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        
+        .room-name {
+            font-size: 1rem;
+        }
+        
+        .setup-section {
+            padding: 20px;
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+        }
+        
+        .setup-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-accent);
+        }
+        
+        .setup-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .btn {
+            background-color: var(--bg-accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: #4752c4;
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #4f545c;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--bg-accent);
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            display: flex;
+            gap: 15px;
+            padding: 5px 0;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--bg-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .message-author {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .message-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .message-text {
+            font-size: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        
+        .file-message {
+            margin-top: 8px;
+            border: 1px solid var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            max-width: 400px;
+        }
+        
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .file-icon {
+            font-size: 1.5rem;
+            color: var(--text-accent);
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .file-size {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .file-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+        
+        .file-download-btn {
+            background-color: var(--bg-accent);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--border-radius);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .file-download-btn:hover {
+            background-color: #4752c4;
+        }
+        
+        .system-message {
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin: 10px 0;
+        }
+        
+        .chat-input-container {
+            padding: 15px 20px;
+            background-color: var(--bg-secondary);
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            background-color: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            padding: 5px 10px;
+            resize: none;
+            max-height: 100px;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+        }
+        
+        .chat-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .chat-button {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--border-radius);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chat-button:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .empty-chat i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--bg-tertiary);
+        }
+        
+        .empty-chat h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .empty-chat p {
+            font-size: 1rem;
+            max-width: 400px;
+        }
+        
+        .user-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+        
+        .room-id-display {
+            background-color: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        
+        .copy-btn {
+            background-color: var(--bg-accent);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            margin-top: 5px;
+            font-size: 0.8rem;
+        }
+        
+        .copy-btn:hover {
+            background-color: #4752c4;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .image-modal-content img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: var(--border-radius);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .upload-progress {
+            margin-top: 5px;
+            background-color: var(--bg-tertiary);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            height: 4px;
+        }
+        
+        .upload-progress-bar {
+            height: 100%;
+            background-color: var(--success);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .voice-message-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--bg-secondary);
+            padding: 8px;
+            border-radius: var(--border-radius);
+            max-width: 300px;
+            margin-top: 8px;
+        }
+
+        .voice-message-player button {
+            background: var(--bg-accent);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-message-player .progress-bar {
+            flex: 1;
+            height: 4px;
+            background-color: var(--bg-tertiary);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .voice-message-player .progress {
+            height: 100%;
+            width: 0%;
+            background-color: var(--text-accent);
+            border-radius: 2px;
+        }
+
+        .voice-message-player .duration {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .call-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            width: 250px;
+        }
+
+        .call-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .call-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .call-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .call-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .call-btn.accept { background-color: var(--success); }
+        .call-btn.decline { background-color: var(--danger); }
+        .call-btn.mute { background-color: var(--bg-tertiary); }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                align-items: center;
+            }
+            
+            .room-name, .section-title {
+                display: none;
+            }
+            
+            .setup-section {
+                padding: 15px 10px;
+            }
+            
+            .logo h1 {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+            }
+            
+            .rooms-section {
+                margin-bottom: 0;
+                margin-right: 15px;
+            }
+            
+            .room-list {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .room-item {
+                margin-bottom: 0;
+                padding: 10px;
+            }
+            
+            .setup-section {
+                margin-top: 0;
+                margin-left: auto;
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="image-modal" id="imageModal">
+        <button class="close-modal" id="closeModal">&times;</button>
+        <div class="image-modal-content">
+            <img id="modalImage" src="" alt="Увеличенное изображение">
+        </div>
+    </div>
+    
+    <div id="audioContainer"></div>
+    
+    <div class="call-container" id="callContainer">
+        <div class="call-header" id="callHeader">Входящий звонок</div>
+        <div class="call-status" id="callStatus">от пользователя...</div>
+        <div class="call-buttons">
+            <button class="call-btn accept" id="acceptCallBtn"><i class="fas fa-phone"></i></button>
+            <button class="call-btn decline" id="declineCallBtn"><i class="fas fa-phone-slash"></i></button>
+            <button class="call-btn mute hidden" id="muteCallBtn"><i class="fas fa-microphone-slash"></i></button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-comments"></i>
+            <h1>SpeakForGeek</h1>
+        </div>
+        <div class="connection-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Не подключено</span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="rooms-section">
+                <div class="section-title">Текстовые каналы</div>
+                <ul class="room-list" id="roomList">
+                    </ul>
+            </div>
+            
+            <div class="setup-section">
+                <div class="setup-title">Управление</div>
+                <div class="setup-buttons">
+                    <button class="btn" id="createRoomBtn">Создать комнату</button>
+                    <button class="btn btn-secondary" id="joinRoomBtn">Присоединиться</button>
+                </div>
+                
+                <div id="createRoomSection" class="hidden">
+                    <div class="input-group">
+                        <label class="input-label" for="roomNameInput">Название комнаты</label>
+                        <input type="text" id="roomNameInput" class="input-field" placeholder="Введите название комнаты">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label" for="roomIdInput">ID комнаты</label>
+                        <input type="text" id="roomIdInput" class="input-field" placeholder="Придумайте уникальный ID">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem;">Используйте только латинские буквы и цифры</small>
+                    </div>
+                    <button class="btn" id="confirmCreateBtn">Создать комнату</button>
+                    <di
