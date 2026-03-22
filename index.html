@@ -2,30 +2,53 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SpeekForGeek - P2P Мессенджер</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SpeekForGeek - Discord-like P2P Chat</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3a 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: #1e1f22;
             height: 100vh;
             overflow: hidden;
-            color: #fff;
+            position: fixed;
+            width: 100%;
         }
 
-        /* Дискорд-подобный интерфейс */
+        /* Discord-like layout */
         .app {
             display: flex;
-            height: 100vh;
+            height: 100%;
+            width: 100%;
         }
 
-        /* Боковая панель (сервера) */
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #5865f2;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            font-size: 24px;
+            border: none;
+            color: white;
+        }
+
+        /* Servers sidebar - Discord style */
         .servers-sidebar {
             width: 72px;
             background: #1e1f22;
@@ -35,12 +58,13 @@
             padding: 12px 0;
             gap: 8px;
             overflow-y: auto;
+            flex-shrink: 0;
         }
 
         .server-icon {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, #5865f2, #4752c4);
+            background: #2b2d31;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -48,39 +72,34 @@
             font-size: 24px;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            color: #dbdee1;
         }
 
-        .server-icon:hover {
+        .server-icon:hover, .server-icon.active {
             border-radius: 16px;
-            background: linear-gradient(135deg, #4752c4, #3b45b0);
-        }
-
-        .server-icon.active {
-            border-radius: 16px;
-            background: linear-gradient(135deg, #5865f2, #4752c4);
+            background: #5865f2;
         }
 
         .server-icon.add {
             background: #2b2d31;
             font-size: 28px;
-            color: #23a55a;
         }
 
         .server-icon.add:hover {
             background: #23a55a;
-            color: white;
+            border-radius: 16px;
         }
 
-        /* Чат-панель */
+        /* Main chat area */
         .chat-main {
             flex: 1;
             display: flex;
             flex-direction: column;
             background: #313338;
+            min-width: 0;
         }
 
-        /* Хедер чата */
+        /* Chat header */
         .chat-header {
             height: 48px;
             background: #2b2d31;
@@ -89,38 +108,47 @@
             align-items: center;
             padding: 0 16px;
             justify-content: space-between;
-            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+            flex-shrink: 0;
         }
 
         .channel-info {
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .channel-icon {
-            font-size: 20px;
+            flex-wrap: wrap;
         }
 
         .channel-name {
             font-weight: 600;
             font-size: 16px;
+            color: white;
         }
 
         .room-code {
             background: #1e1f22;
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
             font-family: monospace;
             color: #23a55a;
         }
 
-        /* Сообщения */
+        .connection-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: #1e1f22;
+        }
+
+        .connection-status.online {
+            color: #23a55a;
+        }
+
+        /* Messages area */
         .messages-area {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 12px 16px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -133,14 +161,14 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .message-avatar {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #5865f2, #4752c4);
+            background: #5865f2;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -151,18 +179,21 @@
 
         .message-content {
             flex: 1;
+            min-width: 0;
         }
 
         .message-header {
             display: flex;
             align-items: baseline;
             gap: 8px;
+            flex-wrap: wrap;
             margin-bottom: 4px;
         }
 
         .message-author {
             font-weight: 600;
-            color: #fff;
+            color: white;
+            font-size: 14px;
         }
 
         .message-time {
@@ -174,6 +205,7 @@
             color: #dbdee1;
             word-wrap: break-word;
             line-height: 1.4;
+            font-size: 14px;
         }
 
         .system-message {
@@ -186,11 +218,12 @@
             border-left: 3px solid #5865f2;
         }
 
-        /* Ввод сообщения */
+        /* Message input */
         .message-input-area {
-            padding: 16px;
+            padding: 12px 16px;
             background: #2b2d31;
             border-top: 1px solid #1e1f22;
+            flex-shrink: 0;
         }
 
         .input-wrapper {
@@ -223,96 +256,18 @@
             height: 32px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
-            transition: all 0.2s;
-        }
-
-        .send-btn:hover {
-            background: #4752c4;
-        }
-
-        /* Модальное окно входа */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            backdrop-filter: blur(8px);
-        }
-
-        .modal-content {
-            background: #2b2d31;
-            border-radius: 16px;
-            padding: 32px;
-            width: 400px;
-            max-width: 90%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-        }
-
-        .modal-content h2 {
-            margin-bottom: 20px;
-            text-align: center;
-            color: #fff;
-        }
-
-        .modal-input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            background: #1e1f22;
-            border: 1px solid #383a40;
-            border-radius: 8px;
-            color: white;
             font-size: 14px;
-            outline: none;
-        }
-
-        .modal-input:focus {
-            border-color: #5865f2;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .modal-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
             transition: all 0.2s;
         }
 
-        .modal-btn.primary {
-            background: #5865f2;
-            color: white;
-        }
-
-        .modal-btn.secondary {
-            background: #4e5058;
-            color: white;
-        }
-
-        .modal-btn:hover {
-            filter: brightness(1.1);
-        }
-
+        /* Members list - collapsible on mobile */
         .member-list {
             width: 240px;
             background: #2b2d31;
             border-left: 1px solid #1e1f22;
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
         }
 
         .member-header {
@@ -332,10 +287,9 @@
         .member {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             padding: 8px;
             border-radius: 8px;
-            margin: 2px 0;
             cursor: pointer;
         }
 
@@ -346,16 +300,22 @@
         .member-avatar {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #5865f2, #4752c4);
+            background: #5865f2;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 16px;
+            flex-shrink: 0;
         }
 
         .member-name {
             font-size: 14px;
+            color: #dbdee1;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .member-status {
@@ -363,12 +323,86 @@
             height: 10px;
             border-radius: 50%;
             background: #23a55a;
-            margin-left: auto;
+            flex-shrink: 0;
         }
 
-        /* Скроллбар */
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            background: #2b2d31;
+            border-radius: 20px;
+            padding: 24px;
+            width: 320px;
+            max-width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #1e1f22;
+            border: 1px solid #383a40;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .modal-input:focus {
+            border-color: #5865f2;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.primary {
+            background: #5865f2;
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #4e5058;
+            color: white;
+        }
+
+        /* Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
 
         ::-webkit-scrollbar-track {
@@ -377,36 +411,111 @@
 
         ::-webkit-scrollbar-thumb {
             background: #383a40;
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4e5058;
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .servers-sidebar {
+                position: fixed;
+                left: -72px;
+                top: 0;
+                height: 100%;
+                z-index: 200;
+                transition: left 0.3s ease;
+                background: #1e1f22;
+                box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+            }
+            
+            .servers-sidebar.open {
+                left: 0;
+            }
+            
+            .member-list {
+                position: fixed;
+                right: -240px;
+                top: 0;
+                height: 100%;
+                z-index: 200;
+                transition: right 0.3s ease;
+                background: #2b2d31;
+                width: 240px;
+            }
+            
+            .member-list.open {
+                right: 0;
+            }
+            
+            .mobile-menu-btn {
+                display: flex;
+            }
+            
+            .chat-header {
+                padding: 0 12px;
+            }
+            
+            .channel-name {
+                font-size: 14px;
+            }
+            
+            .room-code {
+                font-size: 9px;
+            }
+            
+            .messages-area {
+                padding: 12px;
+            }
+            
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+            
+            .message-author {
+                font-size: 13px;
+            }
+            
+            .message-text {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-header {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 8px 12px;
+                gap: 6px;
+            }
+            
+            .channel-info {
+                flex: 1;
+            }
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Боковая панель серверов -->
+        <!-- Servers sidebar -->
         <div class="servers-sidebar" id="serversSidebar">
-            <div class="server-icon" id="mainServerBtn" style="background: #5865f2;">🎙️</div>
+            <div class="server-icon" id="mainServerBtn">🎙️</div>
             <div class="server-icon add" id="addServerBtn">+</div>
         </div>
 
-        <!-- Основной чат -->
+        <!-- Main chat -->
         <div class="chat-main">
             <div class="chat-header">
                 <div class="channel-info">
-                    <span class="channel-icon">#</span>
-                    <span class="channel-name" id="channelName">general</span>
+                    <span class="channel-name" id="channelName"># general</span>
                     <span class="room-code" id="roomCodeDisplay"></span>
                 </div>
-                <div id="connectionStatus" style="font-size: 12px; color: #23a55a;">🟢 Онлайн</div>
+                <div class="connection-status online" id="connectionStatus">🟢 Онлайн</div>
             </div>
 
             <div class="messages-area" id="messagesArea">
                 <div class="system-message">✨ Добро пожаловать в SpeekForGeek!</div>
-                <div class="system-message">💡 Создайте комнату или присоединитесь к существующей</div>
+                <div class="system-message">💡 Создайте комнату с паролем и пригласите друзей</div>
             </div>
 
             <div class="message-input-area">
@@ -417,62 +526,60 @@
             </div>
         </div>
 
-        <!-- Список участников -->
-        <div class="member-list">
+        <!-- Members list -->
+        <div class="member-list" id="memberList">
             <div class="member-header">УЧАСТНИКИ — <span id="memberCount">0</span></div>
             <div class="members" id="membersList"></div>
         </div>
     </div>
 
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+
     <script>
         // P2P переменные
-        let peerConnections = new Map(); // userId -> {pc, dataChannel}
+        let peerConnections = new Map();
         let localUserId = null;
         let currentRoom = null;
         let currentPassword = null;
         let isHost = false;
-        let messages = [];
-        let members = new Map(); // userId -> {name, avatar}
-        
-        // Сигнальный сервер для обмена SDP
         let signalingWs = null;
         
-        // DOM элементы
+        // DOM
         const messagesArea = document.getElementById('messagesArea');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const membersList = document.getElementById('membersList');
         const memberCountSpan = document.getElementById('memberCount');
         const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        const connectionStatusSpan = document.getElementById('connectionStatus');
+        const serversSidebar = document.getElementById('serversSidebar');
+        const memberListPanel = document.getElementById('memberList');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         
-        // Аватары
-        const avatars = ['🐱', '🐶', '🐼', '🦊', '🐻', '🐨', '🦁', '🐸', '🐒', '🐧', '🦉', '🐺', '🐰', '🦝', '🐘'];
+        let members = new Map();
         
-        // Генерация случайного имени
-        const names = ['Алекс', 'Макс', 'Дэн', 'Крис', 'Джей', 'Сэм', 'Эш', 'Рэй', 'Ник', 'Том', 'Ли', 'Кай', 'Зиг', 'Век', 'Некс'];
+        // Аватары и имена
+        const avatars = ['🐱', '🐶', '🐼', '🦊', '🐻', '🐨', '🦁', '🐸', '🐒', '🐧', '🦉', '🐺', '🐰', '🦝'];
+        const names = ['Alex', 'Max', 'Chris', 'Jay', 'Sam', 'Ash', 'Ray', 'Nick', 'Tom', 'Lee', 'Kai', 'Zig', 'Vex', 'Nex'];
         
         function getRandomName() {
-            return names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 100);
+            return names[Math.floor(Math.random() * names.length)];
         }
         
         function getRandomAvatar() {
             return avatars[Math.floor(Math.random() * avatars.length)];
         }
         
-        // Инициализация пользователя
+        // Инициализация
         localUserId = 'user_' + Math.random().toString(36).substr(2, 8);
         const localName = getRandomName();
         const localAvatar = getRandomAvatar();
-        
         members.set(localUserId, { name: localName, avatar: localAvatar, isLocal: true });
         
-        // Функции UI
         function addSystemMessage(text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'system-message';
-            msgDiv.textContent = text;
-            messagesArea.appendChild(msgDiv);
+            const div = document.createElement('div');
+            div.className = 'system-message';
+            div.textContent = text;
+            messagesArea.appendChild(div);
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
         
@@ -480,23 +587,21 @@
             const member = members.get(userId);
             if (!member) return;
             
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'message';
-            
+            const div = document.createElement('div');
+            div.className = 'message';
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            msgDiv.innerHTML = `
+            div.innerHTML = `
                 <div class="message-avatar">${member.avatar}</div>
                 <div class="message-content">
                     <div class="message-header">
-                        <span class="message-author">${member.name}</span>
+                        <span class="message-author">${escapeHtml(member.name)}</span>
                         <span class="message-time">${time}</span>
                     </div>
                     <div class="message-text">${escapeHtml(text)}</div>
                 </div>
             `;
-            
-            messagesArea.appendChild(msgDiv);
+            messagesArea.appendChild(div);
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
         
@@ -509,45 +614,31 @@
         function updateMembersList() {
             membersList.innerHTML = '';
             members.forEach((member, userId) => {
-                const memberDiv = document.createElement('div');
-                memberDiv.className = 'member';
-                memberDiv.innerHTML = `
+                const div = document.createElement('div');
+                div.className = 'member';
+                div.innerHTML = `
                     <div class="member-avatar">${member.avatar}</div>
-                    <div class="member-name">${member.name}${member.isLocal ? ' (Вы)' : ''}</div>
+                    <div class="member-name">${escapeHtml(member.name)}${member.isLocal ? ' (Вы)' : ''}</div>
                     <div class="member-status"></div>
                 `;
-                membersList.appendChild(memberDiv);
+                membersList.appendChild(div);
             });
             memberCountSpan.textContent = members.size;
         }
         
-        // Отправка сообщения через P2P
         function broadcastMessage(text) {
-            const message = {
-                type: 'message',
-                userId: localUserId,
-                text: text,
-                timestamp: Date.now()
-            };
-            
+            const message = { type: 'message', userId: localUserId, text: text, timestamp: Date.now() };
             addMessage(localUserId, text);
             
-            peerConnections.forEach((conn, userId) => {
+            peerConnections.forEach((conn) => {
                 if (conn.dataChannel && conn.dataChannel.readyState === 'open') {
                     conn.dataChannel.send(JSON.stringify(message));
                 }
             });
         }
         
-        // Создание P2P соединения
         async function createPeerConnection(targetUserId, isInitiator) {
-            const config = {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            };
-            
+            const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
             const pc = new RTCPeerConnection(config);
             let dataChannel = null;
             
@@ -562,14 +653,10 @@
             };
             
             pc.onicecandidate = (event) => {
-                if (event.candidate && signalingWs && signalingWs.readyState === WebSocket.OPEN) {
+                if (event.candidate && signalingWs?.readyState === WebSocket.OPEN) {
                     signalingWs.send(JSON.stringify({
-                        type: 'ice',
-                        targetUserId: targetUserId,
-                        candidate: event.candidate,
-                        room: currentRoom,
-                        password: currentPassword,
-                        from: localUserId
+                        type: 'ice', targetUserId, candidate: event.candidate,
+                        room: currentRoom, password: currentPassword, from: localUserId
                     }));
                 }
             };
@@ -581,28 +668,17 @@
         function setupDataChannel(channel, targetUserId) {
             channel.onopen = () => {
                 addSystemMessage(`✅ ${members.get(targetUserId)?.name || targetUserId} подключился`);
-                // Отправляем информацию о себе
-                channel.send(JSON.stringify({
-                    type: 'userInfo',
-                    userId: localUserId,
-                    name: localName,
-                    avatar: localAvatar
-                }));
+                channel.send(JSON.stringify({ type: 'userInfo', userId: localUserId, name: localName, avatar: localAvatar }));
             };
-            
             channel.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                if (data.type === 'message') {
-                    addMessage(data.userId, data.text);
-                } else if (data.type === 'userInfo') {
-                    if (!members.has(data.userId)) {
-                        members.set(data.userId, { name: data.name, avatar: data.avatar });
-                        updateMembersList();
-                        addSystemMessage(`👤 ${data.name} присоединился к чату`);
-                    }
+                if (data.type === 'message') addMessage(data.userId, data.text);
+                else if (data.type === 'userInfo' && !members.has(data.userId)) {
+                    members.set(data.userId, { name: data.name, avatar: data.avatar });
+                    updateMembersList();
+                    addSystemMessage(`👤 ${data.name} присоединился`);
                 }
             };
-            
             channel.onclose = () => {
                 const member = members.get(targetUserId);
                 if (member) {
@@ -614,19 +690,12 @@
             };
         }
         
-        // Подключение к сигнальному серверу (используем публичный WebSocket)
         function connectToSignaling(room, password, isHosting) {
             return new Promise((resolve, reject) => {
                 signalingWs = new WebSocket('wss://ws.ifelse.io');
                 
                 signalingWs.onopen = () => {
-                    signalingWs.send(JSON.stringify({
-                        type: 'join',
-                        room: room,
-                        password: password,
-                        userId: localUserId,
-                        isHost: isHosting
-                    }));
+                    signalingWs.send(JSON.stringify({ type: 'join', room, password, userId: localUserId, isHost: isHosting }));
                 };
                 
                 signalingWs.onmessage = async (event) => {
@@ -636,84 +705,54 @@
                         isHost = data.isHost;
                         currentRoom = room;
                         currentPassword = password;
-                        roomCodeDisplay.textContent = `🔒 Комната: ${room}`;
-                        connectionStatusSpan.innerHTML = '🟢 Подключено';
+                        roomCodeDisplay.textContent = `🔒 ${room}`;
                         messageInput.disabled = false;
                         sendBtn.disabled = false;
                         addSystemMessage(`🎉 Вы вошли в комнату "${room}"`);
                         addSystemMessage(`👥 В комнате ${data.members?.length || 1} участников`);
                         
-                        // Подключаемся к существующим участникам
                         if (data.members) {
                             for (const member of data.members) {
                                 if (member !== localUserId && !peerConnections.has(member)) {
                                     await createPeerConnection(member, true);
-                                    // Отправляем offer
                                     const offer = await peerConnections.get(member).pc.createOffer();
                                     await peerConnections.get(member).pc.setLocalDescription(offer);
                                     signalingWs.send(JSON.stringify({
-                                        type: 'offer',
-                                        targetUserId: member,
-                                        offer: offer,
-                                        room: room,
-                                        password: password,
-                                        from: localUserId
+                                        type: 'offer', targetUserId: member, offer, room, password, from: localUserId
                                     }));
                                 }
                             }
                         }
                         resolve();
-                    } else if (data.type === 'offer') {
-                        if (!peerConnections.has(data.from)) {
-                            await createPeerConnection(data.from, false);
-                            await peerConnections.get(data.from).pc.setRemoteDescription(data.offer);
-                            const answer = await peerConnections.get(data.from).pc.createAnswer();
-                            await peerConnections.get(data.from).pc.setLocalDescription(answer);
-                            signalingWs.send(JSON.stringify({
-                                type: 'answer',
-                                targetUserId: data.from,
-                                answer: answer,
-                                room: room,
-                                password: password,
-                                from: localUserId
-                            }));
-                        }
+                    } else if (data.type === 'offer' && !peerConnections.has(data.from)) {
+                        await createPeerConnection(data.from, false);
+                        await peerConnections.get(data.from).pc.setRemoteDescription(data.offer);
+                        const answer = await peerConnections.get(data.from).pc.createAnswer();
+                        await peerConnections.get(data.from).pc.setLocalDescription(answer);
+                        signalingWs.send(JSON.stringify({
+                            type: 'answer', targetUserId: data.from, answer, room, password, from: localUserId
+                        }));
                     } else if (data.type === 'answer') {
                         const conn = peerConnections.get(data.from);
-                        if (conn && conn.pc) {
-                            await conn.pc.setRemoteDescription(data.answer);
-                        }
+                        if (conn?.pc) await conn.pc.setRemoteDescription(data.answer);
                     } else if (data.type === 'ice') {
                         const conn = peerConnections.get(data.from);
-                        if (conn && conn.pc) {
-                            await conn.pc.addIceCandidate(data.candidate);
-                        }
-                    } else if (data.type === 'new_member') {
-                        if (data.userId !== localUserId && !peerConnections.has(data.userId)) {
-                            await createPeerConnection(data.userId, true);
-                            const offer = await peerConnections.get(data.userId).pc.createOffer();
-                            await peerConnections.get(data.userId).pc.setLocalDescription(offer);
-                            signalingWs.send(JSON.stringify({
-                                type: 'offer',
-                                targetUserId: data.userId,
-                                offer: offer,
-                                room: room,
-                                password: password,
-                                from: localUserId
-                            }));
-                        }
+                        if (conn?.pc) await conn.pc.addIceCandidate(data.candidate);
+                    } else if (data.type === 'new_member' && data.userId !== localUserId && !peerConnections.has(data.userId)) {
+                        await createPeerConnection(data.userId, true);
+                        const offer = await peerConnections.get(data.userId).pc.createOffer();
+                        await peerConnections.get(data.userId).pc.setLocalDescription(offer);
+                        signalingWs.send(JSON.stringify({
+                            type: 'offer', targetUserId: data.userId, offer, room, password, from: localUserId
+                        }));
                     } else if (data.type === 'error') {
                         reject(new Error(data.message));
                     }
                 };
-                
-                signalingWs.onerror = () => {
-                    reject(new Error('Ошибка подключения к серверу'));
-                };
+                signalingWs.onerror = () => reject(new Error('Ошибка подключения'));
             });
         }
         
-        // Модальное окно входа
         function showLoginModal() {
             const modal = document.createElement('div');
             modal.className = 'modal';
@@ -721,96 +760,88 @@
                 <div class="modal-content">
                     <h2>🎙️ SpeekForGeek</h2>
                     <input type="text" class="modal-input" id="roomIdInput" placeholder="ID комнаты" autocomplete="off">
-                    <input type="password" class="modal-input" id="roomPasswordInput" placeholder="Пароль комнаты">
+                    <input type="password" class="modal-input" id="roomPasswordInput" placeholder="Пароль">
                     <div class="modal-buttons">
-                        <button class="modal-btn primary" id="createRoomBtn">✨ Создать комнату</button>
-                        <button class="modal-btn secondary" id="joinRoomBtn">🔗 Войти в комнату</button>
+                        <button class="modal-btn primary" id="createRoomBtn">✨ Создать</button>
+                        <button class="modal-btn secondary" id="joinRoomBtn">🔗 Войти</button>
                     </div>
                 </div>
             `;
-            
             document.body.appendChild(modal);
             
-            const createBtn = document.getElementById('createRoomBtn');
-            const joinBtn = document.getElementById('joinRoomBtn');
-            const roomIdInput = document.getElementById('roomIdInput');
-            const passwordInput = document.getElementById('roomPasswordInput');
-            
-            createBtn.onclick = async () => {
-                const roomId = roomIdInput.value.trim() || 'room_' + Math.random().toString(36).substr(2, 6);
-                const password = passwordInput.value.trim() || 'default';
-                
+            document.getElementById('createRoomBtn').onclick = async () => {
+                const roomId = document.getElementById('roomIdInput').value.trim() || 'room_' + Math.random().toString(36).substr(2, 6);
+                const password = document.getElementById('roomPasswordInput').value.trim() || 'default';
                 modal.remove();
                 try {
                     await connectToSignaling(roomId, password, true);
                     addSystemMessage(`✨ Комната "${roomId}" создана! Пароль: ${password}`);
-                } catch (err) {
-                    alert('Ошибка: ' + err.message);
-                    showLoginModal();
-                }
+                } catch(err) { alert('Ошибка: ' + err.message); showLoginModal(); }
             };
             
-            joinBtn.onclick = async () => {
-                const roomId = roomIdInput.value.trim();
-                const password = passwordInput.value.trim();
-                
-                if (!roomId) {
-                    alert('Введите ID комнаты');
-                    return;
-                }
-                if (!password) {
-                    alert('Введите пароль комнаты');
-                    return;
-                }
-                
+            document.getElementById('joinRoomBtn').onclick = async () => {
+                const roomId = document.getElementById('roomIdInput').value.trim();
+                const password = document.getElementById('roomPasswordInput').value.trim();
+                if (!roomId || !password) { alert('Введите ID и пароль'); return; }
                 modal.remove();
                 try {
                     await connectToSignaling(roomId, password, false);
-                    addSystemMessage(`🔗 Вы присоединились к комнате "${roomId}"`);
-                } catch (err) {
-                    alert('Ошибка: ' + err.message);
-                    showLoginModal();
-                }
+                    addSystemMessage(`🔗 Вы присоединились к "${roomId}"`);
+                } catch(err) { alert('Ошибка: ' + err.message); showLoginModal(); }
             };
         }
         
-        // Отправка сообщения
         function sendMessage() {
             const text = messageInput.value.trim();
-            if (text && signalingWs && signalingWs.readyState === WebSocket.OPEN) {
+            if (text && signalingWs?.readyState === WebSocket.OPEN) {
                 broadcastMessage(text);
                 messageInput.value = '';
             }
         }
         
-        // Создание новой комнаты (через боковую панель)
-        document.getElementById('addServerBtn').onclick = () => {
-            if (signalingWs) {
-                signalingWs.close();
-                peerConnections.clear();
-                members.clear();
-                members.set(localUserId, { name: localName, avatar: localAvatar, isLocal: true });
-                updateMembersList();
-                messagesArea.innerHTML = '';
-                addSystemMessage('✨ Добро пожаловать в SpeekForGeek!');
+        // Mobile menu
+        let sidebarOpen = false;
+        let memberListOpen = false;
+        
+        mobileMenuBtn.onclick = () => {
+            if (memberListOpen) {
+                memberListPanel.classList.remove('open');
+                memberListOpen = false;
             }
-            showLoginModal();
+            serversSidebar.classList.toggle('open');
+            sidebarOpen = serversSidebar.classList.contains('open');
         };
         
         document.getElementById('mainServerBtn').onclick = () => {
-            // Показываем информацию о текущей комнате
-            if (currentRoom) {
-                addSystemMessage(`🏠 Текущая комната: ${currentRoom} | Пароль: ${currentPassword}`);
+            if (currentRoom) addSystemMessage(`🏠 Комната: ${currentRoom} | Пароль: ${currentPassword}`);
+            if (sidebarOpen) serversSidebar.classList.remove('open');
+        };
+        
+        document.getElementById('addServerBtn').onclick = () => {
+            if (signalingWs) signalingWs.close();
+            peerConnections.clear();
+            members.clear();
+            members.set(localUserId, { name: localName, avatar: localAvatar, isLocal: true });
+            updateMembersList();
+            messagesArea.innerHTML = '';
+            addSystemMessage('✨ Добро пожаловать в SpeekForGeek!');
+            showLoginModal();
+            if (sidebarOpen) serversSidebar.classList.remove('open');
+        };
+        
+        // Toggle member list on avatar click
+        document.querySelector('.channel-name')?.addEventListener('click', () => {
+            memberListPanel.classList.toggle('open');
+            memberListOpen = memberListPanel.classList.contains('open');
+            if (memberListOpen && sidebarOpen) {
+                serversSidebar.classList.remove('open');
+                sidebarOpen = false;
             }
-        };
+        });
         
-        // Обработчики
         sendBtn.onclick = sendMessage;
-        messageInput.onkeypress = (e) => {
-            if (e.key === 'Enter') sendMessage();
-        };
+        messageInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
         
-        // Запуск
         updateMembersList();
         showLoginModal();
     </script>
