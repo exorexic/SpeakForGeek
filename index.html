@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SpeekForGeek - Discord-like P2P Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>SpeekForGeek — P2P мессенджер</title>
     <style>
         * {
             margin: 0;
@@ -13,12 +13,12 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #1e1f22;
-            height: 100vh;
+            color: #e1e3e6;
             overflow: hidden;
-            position: fixed;
-            width: 100%;
+            height: 100vh;
+            width: 100vw;
         }
 
         /* Discord-like layout */
@@ -28,30 +28,10 @@
             width: 100%;
         }
 
-        /* Mobile menu button */
-        .mobile-menu-btn {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            background: #5865f2;
-            border-radius: 50%;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            cursor: pointer;
-            font-size: 24px;
-            border: none;
-            color: white;
-        }
-
-        /* Servers sidebar - Discord style */
-        .servers-sidebar {
+        /* Sidebar (серверы/каналы) */
+        .sidebar {
             width: 72px;
-            background: #1e1f22;
+            background: #111214;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -69,86 +49,86 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
+            font-weight: bold;
+            font-size: 20px;
             transition: all 0.2s;
+            cursor: pointer;
             color: #dbdee1;
         }
 
-        .server-icon:hover, .server-icon.active {
-            border-radius: 16px;
+        .server-icon.active {
             background: #5865f2;
-        }
-
-        .server-icon.add {
-            background: #2b2d31;
-            font-size: 28px;
-        }
-
-        .server-icon.add:hover {
-            background: #23a55a;
             border-radius: 16px;
+            color: white;
         }
 
-        /* Main chat area */
-        .chat-main {
+        /* Main content */
+        .main {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #313338;
             min-width: 0;
+            background: #1e1f22;
         }
 
-        /* Chat header */
-        .chat-header {
+        /* Header */
+        .header {
             height: 48px;
-            background: #2b2d31;
-            border-bottom: 1px solid #1e1f22;
-            display: flex;
-            align-items: center;
             padding: 0 16px;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .channel-info {
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            background: #1e1f22;
+            border-bottom: 1px solid #2b2d31;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
         }
 
         .channel-name {
             font-weight: 600;
             font-size: 16px;
+        }
+
+        .call-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            background: #2b2d31;
+            border: none;
+            color: #e1e3e6;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.1s;
+        }
+
+        .icon-btn.danger {
+            background: #da373c;
             color: white;
         }
 
-        .room-code {
-            background: #1e1f22;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-family: monospace;
-            color: #23a55a;
+        .icon-btn.success {
+            background: #248046;
         }
 
-        .connection-status {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: #1e1f22;
+        /* Chat area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        .connection-status.online {
-            color: #23a55a;
-        }
-
-        /* Messages area */
-        .messages-area {
+        .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 12px 16px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -156,694 +136,531 @@
 
         .message {
             display: flex;
-            gap: 12px;
-            animation: fadeIn 0.2s ease;
+            flex-direction: column;
+            max-width: 85%;
+            background: #2b2d31;
+            border-radius: 16px;
+            padding: 8px 12px;
+            align-self: flex-start;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message-avatar {
-            width: 40px;
-            height: 40px;
-            background: #5865f2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .message-content {
-            flex: 1;
-            min-width: 0;
+        .message.own {
+            background: #4752c4;
+            align-self: flex-end;
         }
 
         .message-header {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 4px;
-        }
-
-        .message-author {
+            font-size: 12px;
             font-weight: 600;
-            color: white;
-            font-size: 14px;
+            margin-bottom: 4px;
+            color: #b5bac1;
         }
 
-        .message-time {
-            font-size: 10px;
-            color: #949ba4;
+        .message.own .message-header {
+            color: #c7ccff;
         }
 
         .message-text {
-            color: #dbdee1;
+            font-size: 14px;
             word-wrap: break-word;
-            line-height: 1.4;
-            font-size: 14px;
         }
 
-        .system-message {
-            background: rgba(88,101,242,0.1);
-            padding: 8px 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 12px;
-            color: #949ba4;
-            border-left: 3px solid #5865f2;
-        }
-
-        /* Message input */
-        .message-input-area {
-            padding: 12px 16px;
-            background: #2b2d31;
-            border-top: 1px solid #1e1f22;
-            flex-shrink: 0;
-        }
-
-        .input-wrapper {
-            background: #383a40;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            padding: 0 12px;
-        }
-
-        .message-input {
-            flex: 1;
-            background: none;
-            border: none;
-            padding: 12px 0;
-            color: #dbdee1;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .message-input::placeholder {
-            color: #949ba4;
-        }
-
-        .send-btn {
-            background: #5865f2;
-            border: none;
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        /* Members list - collapsible on mobile */
-        .member-list {
-            width: 240px;
-            background: #2b2d31;
-            border-left: 1px solid #1e1f22;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
-
-        .member-header {
+        .input-area {
             padding: 16px;
-            font-weight: 600;
-            border-bottom: 1px solid #1e1f22;
-            font-size: 12px;
-            color: #949ba4;
-        }
-
-        .members {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .member {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .member:hover {
-            background: #383a40;
-        }
-
-        .member-avatar {
-            width: 32px;
-            height: 32px;
-            background: #5865f2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
-        .member-name {
-            font-size: 14px;
-            color: #dbdee1;
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .member-status {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #23a55a;
-            flex-shrink: 0;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(8px);
-        }
-
-        .modal-content {
-            background: #2b2d31;
-            border-radius: 20px;
-            padding: 24px;
-            width: 320px;
-            max-width: 90%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-        }
-
-        .modal-content h2 {
-            margin-bottom: 20px;
-            text-align: center;
-            color: white;
-            font-size: 24px;
-        }
-
-        .modal-input {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
             background: #1e1f22;
-            border: 1px solid #383a40;
-            border-radius: 12px;
-            color: white;
-            font-size: 14px;
+            border-top: 1px solid #2b2d31;
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: #383a40;
+            border: none;
+            border-radius: 24px;
+            padding: 12px 16px;
+            color: #e1e3e6;
+            font-size: 15px;
             outline: none;
         }
 
-        .modal-input:focus {
-            border-color: #5865f2;
+        .input-area input::placeholder {
+            color: #949ba4;
         }
 
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .modal-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .modal-btn.primary {
+        .input-area button {
             background: #5865f2;
+            border: none;
+            border-radius: 24px;
+            padding: 0 20px;
             color: white;
+            font-weight: 600;
+            cursor: pointer;
         }
 
-        .modal-btn.secondary {
-            background: #4e5058;
-            color: white;
+        /* Peer info & call status */
+        .peer-info {
+            background: #111214;
+            padding: 8px 12px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #2b2d31;
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
+        .status {
+            color: #23a55a;
         }
 
-        ::-webkit-scrollbar-track {
-            background: #1e1f22;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #383a40;
-            border-radius: 3px;
-        }
-
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .servers-sidebar {
-                position: fixed;
-                left: -72px;
-                top: 0;
-                height: 100%;
-                z-index: 200;
-                transition: left 0.3s ease;
-                background: #1e1f22;
-                box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+        /* Mobile adjustments */
+        @media (max-width: 640px) {
+            .sidebar {
+                width: 60px;
             }
-            
-            .servers-sidebar.open {
-                left: 0;
-            }
-            
-            .member-list {
-                position: fixed;
-                right: -240px;
-                top: 0;
-                height: 100%;
-                z-index: 200;
-                transition: right 0.3s ease;
-                background: #2b2d31;
-                width: 240px;
-            }
-            
-            .member-list.open {
-                right: 0;
-            }
-            
-            .mobile-menu-btn {
-                display: flex;
-            }
-            
-            .chat-header {
-                padding: 0 12px;
-            }
-            
-            .channel-name {
-                font-size: 14px;
-            }
-            
-            .room-code {
-                font-size: 9px;
-            }
-            
-            .messages-area {
-                padding: 12px;
-            }
-            
-            .message-avatar {
-                width: 32px;
-                height: 32px;
+            .server-icon {
+                width: 40px;
+                height: 40px;
                 font-size: 16px;
             }
-            
-            .message-author {
-                font-size: 13px;
+            .message {
+                max-width: 90%;
             }
-            
-            .message-text {
-                font-size: 13px;
+            .icon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
             }
         }
 
-        @media (max-width: 480px) {
-            .chat-header {
-                flex-wrap: wrap;
-                height: auto;
-                padding: 8px 12px;
-                gap: 6px;
-            }
-            
-            .channel-info {
-                flex: 1;
-            }
+        /* Call overlay */
+        .call-overlay {
+            position: fixed;
+            bottom: 80px;
+            right: 16px;
+            background: #2b2d31;
+            border-radius: 32px;
+            padding: 8px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+
+        .call-overlay span {
+            font-size: 13px;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
-    <div class="app">
-        <!-- Servers sidebar -->
-        <div class="servers-sidebar" id="serversSidebar">
-            <div class="server-icon" id="mainServerBtn">🎙️</div>
-            <div class="server-icon add" id="addServerBtn">+</div>
-        </div>
-
-        <!-- Main chat -->
-        <div class="chat-main">
-            <div class="chat-header">
-                <div class="channel-info">
-                    <span class="channel-name" id="channelName"># general</span>
-                    <span class="room-code" id="roomCodeDisplay"></span>
-                </div>
-                <div class="connection-status online" id="connectionStatus">🟢 Онлайн</div>
-            </div>
-
-            <div class="messages-area" id="messagesArea">
-                <div class="system-message">✨ Добро пожаловать в SpeekForGeek!</div>
-                <div class="system-message">💡 Создайте комнату с паролем и пригласите друзей</div>
-            </div>
-
-            <div class="message-input-area">
-                <div class="input-wrapper">
-                    <input type="text" class="message-input" id="messageInput" placeholder="Введите сообщение..." disabled>
-                    <button class="send-btn" id="sendBtn" disabled>➤</button>
-                </div>
+<div class="app">
+    <div class="sidebar">
+        <div class="server-icon active">SG</div>
+        <div class="server-icon">🎧</div>
+    </div>
+    <div class="main">
+        <div class="header">
+            <div class="channel-name"># general</div>
+            <div class="call-controls">
+                <button class="icon-btn" id="callBtn">📞</button>
+                <button class="icon-btn" id="hangupBtn" style="display: none;">🔴</button>
             </div>
         </div>
-
-        <!-- Members list -->
-        <div class="member-list" id="memberList">
-            <div class="member-header">УЧАСТНИКИ — <span id="memberCount">0</span></div>
-            <div class="members" id="membersList"></div>
+        <div class="chat-container">
+            <div class="messages" id="messagesList">
+                <div class="message">
+                    <div class="message-header">SpeekForGeek</div>
+                    <div class="message-text">✨ Добро пожаловать! P2P сеть активна. Подключайтесь через WebRTC.</div>
+                </div>
+                <div class="message">
+                    <div class="message-header">Система</div>
+                    <div class="message-text">💡 Скопируйте свой ID и поделитесь с другом, чтобы добавить вручную. Либо откройте эту же страницу и нажмите "Создать группу".</div>
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Введите сообщение...">
+                <button id="sendBtn">Отправить</button>
+            </div>
+        </div>
+        <div class="peer-info">
+            <span>🆔 Мой ID: <strong id="myPeerId">загрузка...</strong></span>
+            <span id="peerStatus">📡 Поиск пиров...</span>
         </div>
     </div>
+</div>
+<div id="callOverlay" class="call-overlay" style="display: none;">
+    <span>🔊 Активный звонок</span>
+    <button class="icon-btn danger" id="endCallOverlayBtn" style="width: 28px; height: 28px;">⏹️</button>
+</div>
 
-    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+    // ------------------- Глобальное состояние -------------------
+    let peer;                // экземпляр Peer
+    let myId = null;
+    let connections = {};    // все активные P2P соединения (id -> dataConnection)
+    let mediaConnections = {}; // отдельно для звонков (MediaConnection)
+    let localStream = null;
+    let currentCallActive = false;
+    let currentCallPeerId = null;
+    let audioElements = {};   // для удаленных потоков
 
-    <script>
-        // P2P переменные
-        let peerConnections = new Map();
-        let localUserId = null;
-        let currentRoom = null;
-        let currentPassword = null;
-        let isHost = false;
-        let signalingWs = null;
-        
-        // DOM
-        const messagesArea = document.getElementById('messagesArea');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const membersList = document.getElementById('membersList');
-        const memberCountSpan = document.getElementById('memberCount');
-        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        const serversSidebar = document.getElementById('serversSidebar');
-        const memberListPanel = document.getElementById('memberList');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        
-        let members = new Map();
-        
-        // Аватары и имена
-        const avatars = ['🐱', '🐶', '🐼', '🦊', '🐻', '🐨', '🦁', '🐸', '🐒', '🐧', '🦉', '🐺', '🐰', '🦝'];
-        const names = ['Alex', 'Max', 'Chris', 'Jay', 'Sam', 'Ash', 'Ray', 'Nick', 'Tom', 'Lee', 'Kai', 'Zig', 'Vex', 'Nex'];
-        
-        function getRandomName() {
-            return names[Math.floor(Math.random() * names.length)];
-        }
-        
-        function getRandomAvatar() {
-            return avatars[Math.floor(Math.random() * avatars.length)];
-        }
-        
-        // Инициализация
-        localUserId = 'user_' + Math.random().toString(36).substr(2, 8);
-        const localName = getRandomName();
-        const localAvatar = getRandomAvatar();
-        members.set(localUserId, { name: localName, avatar: localAvatar, isLocal: true });
-        
-        function addSystemMessage(text) {
-            const div = document.createElement('div');
-            div.className = 'system-message';
-            div.textContent = text;
-            messagesArea.appendChild(div);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-        }
-        
-        function addMessage(userId, text) {
-            const member = members.get(userId);
-            if (!member) return;
-            
-            const div = document.createElement('div');
-            div.className = 'message';
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            div.innerHTML = `
-                <div class="message-avatar">${member.avatar}</div>
-                <div class="message-content">
-                    <div class="message-header">
-                        <span class="message-author">${escapeHtml(member.name)}</span>
-                        <span class="message-time">${time}</span>
-                    </div>
-                    <div class="message-text">${escapeHtml(text)}</div>
-                </div>
-            `;
-            messagesArea.appendChild(div);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function updateMembersList() {
-            membersList.innerHTML = '';
-            members.forEach((member, userId) => {
-                const div = document.createElement('div');
-                div.className = 'member';
-                div.innerHTML = `
-                    <div class="member-avatar">${member.avatar}</div>
-                    <div class="member-name">${escapeHtml(member.name)}${member.isLocal ? ' (Вы)' : ''}</div>
-                    <div class="member-status"></div>
-                `;
-                membersList.appendChild(div);
-            });
-            memberCountSpan.textContent = members.size;
-        }
-        
-        function broadcastMessage(text) {
-            const message = { type: 'message', userId: localUserId, text: text, timestamp: Date.now() };
-            addMessage(localUserId, text);
-            
-            peerConnections.forEach((conn) => {
-                if (conn.dataChannel && conn.dataChannel.readyState === 'open') {
-                    conn.dataChannel.send(JSON.stringify(message));
-                }
-            });
-        }
-        
-        async function createPeerConnection(targetUserId, isInitiator) {
-            const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-            const pc = new RTCPeerConnection(config);
-            let dataChannel = null;
-            
-            if (isInitiator) {
-                dataChannel = pc.createDataChannel('chat');
-                setupDataChannel(dataChannel, targetUserId);
-            }
-            
-            pc.ondatachannel = (event) => {
-                dataChannel = event.channel;
-                setupDataChannel(dataChannel, targetUserId);
-            };
-            
-            pc.onicecandidate = (event) => {
-                if (event.candidate && signalingWs?.readyState === WebSocket.OPEN) {
-                    signalingWs.send(JSON.stringify({
-                        type: 'ice', targetUserId, candidate: event.candidate,
-                        room: currentRoom, password: currentPassword, from: localUserId
-                    }));
-                }
-            };
-            
-            peerConnections.set(targetUserId, { pc, dataChannel });
-            return { pc, dataChannel };
-        }
-        
-        function setupDataChannel(channel, targetUserId) {
-            channel.onopen = () => {
-                addSystemMessage(`✅ ${members.get(targetUserId)?.name || targetUserId} подключился`);
-                channel.send(JSON.stringify({ type: 'userInfo', userId: localUserId, name: localName, avatar: localAvatar }));
-            };
-            channel.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'message') addMessage(data.userId, data.text);
-                else if (data.type === 'userInfo' && !members.has(data.userId)) {
-                    members.set(data.userId, { name: data.name, avatar: data.avatar });
-                    updateMembersList();
-                    addSystemMessage(`👤 ${data.name} присоединился`);
-                }
-            };
-            channel.onclose = () => {
-                const member = members.get(targetUserId);
-                if (member) {
-                    addSystemMessage(`❌ ${member.name} отключился`);
-                    members.delete(targetUserId);
-                    updateMembersList();
-                }
-                peerConnections.delete(targetUserId);
-            };
-        }
-        
-        function connectToSignaling(room, password, isHosting) {
-            return new Promise((resolve, reject) => {
-                signalingWs = new WebSocket('wss://ws.ifelse.io');
-                
-                signalingWs.onopen = () => {
-                    signalingWs.send(JSON.stringify({ type: 'join', room, password, userId: localUserId, isHost: isHosting }));
-                };
-                
-                signalingWs.onmessage = async (event) => {
-                    const data = JSON.parse(event.data);
-                    
-                    if (data.type === 'joined') {
-                        isHost = data.isHost;
-                        currentRoom = room;
-                        currentPassword = password;
-                        roomCodeDisplay.textContent = `🔒 ${room}`;
-                        messageInput.disabled = false;
-                        sendBtn.disabled = false;
-                        addSystemMessage(`🎉 Вы вошли в комнату "${room}"`);
-                        addSystemMessage(`👥 В комнате ${data.members?.length || 1} участников`);
-                        
-                        if (data.members) {
-                            for (const member of data.members) {
-                                if (member !== localUserId && !peerConnections.has(member)) {
-                                    await createPeerConnection(member, true);
-                                    const offer = await peerConnections.get(member).pc.createOffer();
-                                    await peerConnections.get(member).pc.setLocalDescription(offer);
-                                    signalingWs.send(JSON.stringify({
-                                        type: 'offer', targetUserId: member, offer, room, password, from: localUserId
-                                    }));
-                                }
-                            }
-                        }
-                        resolve();
-                    } else if (data.type === 'offer' && !peerConnections.has(data.from)) {
-                        await createPeerConnection(data.from, false);
-                        await peerConnections.get(data.from).pc.setRemoteDescription(data.offer);
-                        const answer = await peerConnections.get(data.from).pc.createAnswer();
-                        await peerConnections.get(data.from).pc.setLocalDescription(answer);
-                        signalingWs.send(JSON.stringify({
-                            type: 'answer', targetUserId: data.from, answer, room, password, from: localUserId
-                        }));
-                    } else if (data.type === 'answer') {
-                        const conn = peerConnections.get(data.from);
-                        if (conn?.pc) await conn.pc.setRemoteDescription(data.answer);
-                    } else if (data.type === 'ice') {
-                        const conn = peerConnections.get(data.from);
-                        if (conn?.pc) await conn.pc.addIceCandidate(data.candidate);
-                    } else if (data.type === 'new_member' && data.userId !== localUserId && !peerConnections.has(data.userId)) {
-                        await createPeerConnection(data.userId, true);
-                        const offer = await peerConnections.get(data.userId).pc.createOffer();
-                        await peerConnections.get(data.userId).pc.setLocalDescription(offer);
-                        signalingWs.send(JSON.stringify({
-                            type: 'offer', targetUserId: data.userId, offer, room, password, from: localUserId
-                        }));
-                    } else if (data.type === 'error') {
-                        reject(new Error(data.message));
-                    }
-                };
-                signalingWs.onerror = () => reject(new Error('Ошибка подключения'));
-            });
-        }
-        
-        function showLoginModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <h2>🎙️ SpeekForGeek</h2>
-                    <input type="text" class="modal-input" id="roomIdInput" placeholder="ID комнаты" autocomplete="off">
-                    <input type="password" class="modal-input" id="roomPasswordInput" placeholder="Пароль">
-                    <div class="modal-buttons">
-                        <button class="modal-btn primary" id="createRoomBtn">✨ Создать</button>
-                        <button class="modal-btn secondary" id="joinRoomBtn">🔗 Войти</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            document.getElementById('createRoomBtn').onclick = async () => {
-                const roomId = document.getElementById('roomIdInput').value.trim() || 'room_' + Math.random().toString(36).substr(2, 6);
-                const password = document.getElementById('roomPasswordInput').value.trim() || 'default';
-                modal.remove();
-                try {
-                    await connectToSignaling(roomId, password, true);
-                    addSystemMessage(`✨ Комната "${roomId}" создана! Пароль: ${password}`);
-                } catch(err) { alert('Ошибка: ' + err.message); showLoginModal(); }
-            };
-            
-            document.getElementById('joinRoomBtn').onclick = async () => {
-                const roomId = document.getElementById('roomIdInput').value.trim();
-                const password = document.getElementById('roomPasswordInput').value.trim();
-                if (!roomId || !password) { alert('Введите ID и пароль'); return; }
-                modal.remove();
-                try {
-                    await connectToSignaling(roomId, password, false);
-                    addSystemMessage(`🔗 Вы присоединились к "${roomId}"`);
-                } catch(err) { alert('Ошибка: ' + err.message); showLoginModal(); }
-            };
-        }
-        
-        function sendMessage() {
-            const text = messageInput.value.trim();
-            if (text && signalingWs?.readyState === WebSocket.OPEN) {
-                broadcastMessage(text);
-                messageInput.value = '';
-            }
-        }
-        
-        // Mobile menu
-        let sidebarOpen = false;
-        let memberListOpen = false;
-        
-        mobileMenuBtn.onclick = () => {
-            if (memberListOpen) {
-                memberListPanel.classList.remove('open');
-                memberListOpen = false;
-            }
-            serversSidebar.classList.toggle('open');
-            sidebarOpen = serversSidebar.classList.contains('open');
-        };
-        
-        document.getElementById('mainServerBtn').onclick = () => {
-            if (currentRoom) addSystemMessage(`🏠 Комната: ${currentRoom} | Пароль: ${currentPassword}`);
-            if (sidebarOpen) serversSidebar.classList.remove('open');
-        };
-        
-        document.getElementById('addServerBtn').onclick = () => {
-            if (signalingWs) signalingWs.close();
-            peerConnections.clear();
-            members.clear();
-            members.set(localUserId, { name: localName, avatar: localAvatar, isLocal: true });
-            updateMembersList();
-            messagesArea.innerHTML = '';
-            addSystemMessage('✨ Добро пожаловать в SpeekForGeek!');
-            showLoginModal();
-            if (sidebarOpen) serversSidebar.classList.remove('open');
-        };
-        
-        // Toggle member list on avatar click
-        document.querySelector('.channel-name')?.addEventListener('click', () => {
-            memberListPanel.classList.toggle('open');
-            memberListOpen = memberListPanel.classList.contains('open');
-            if (memberListOpen && sidebarOpen) {
-                serversSidebar.classList.remove('open');
-                sidebarOpen = false;
+    // Групповая рассылка: все, кроме отправителя
+    let allPeerIds = new Set(); // список всех подключенных ID (включая меня? только другие)
+
+    // DOM элементы
+    const messagesContainer = document.getElementById('messagesList');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const callBtn = document.getElementById('callBtn');
+    const hangupBtn = document.getElementById('hangupBtn');
+    const myPeerIdSpan = document.getElementById('myPeerId');
+    const peerStatusSpan = document.getElementById('peerStatus');
+    const callOverlay = document.getElementById('callOverlay');
+    const endCallOverlayBtn = document.getElementById('endCallOverlayBtn');
+
+    // Генерация случайного имени для демо (в дискорд-стиле)
+    const randomName = "Geek_" + Math.floor(Math.random() * 9000 + 1000);
+
+    // Инициализация PeerJS с публичным STUN сервером
+    function initPeer() {
+        // Используем публичный STUN/TURN (можно заменить своим)
+        peer = new Peer(undefined, {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }
+                ]
             }
         });
-        
-        sendBtn.onclick = sendMessage;
-        messageInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-        
-        updateMembersList();
-        showLoginModal();
-    </script>
+
+        peer.on('open', (id) => {
+            myId = id;
+            myPeerIdSpan.innerText = myId;
+            peerStatusSpan.innerText = '✅ Ваш ID готов. Делитесь им!';
+            // Автоматически подключаемся к демо-роуму? Нет, даем пользователю копировать.
+            // Можно добавить "Пригласить" но для простоты реализуем ручное подключение через промпт
+            // Чтобы показать групповой p2p, создадим всплывающее окно для добавления пира
+            setTimeout(() => {
+                const joinAny = confirm("Хотите подключиться к тестовой группе? (Введите ID друга) \nЕсли вы первый, нажмите Отмена и поделитесь своим ID.");
+                if (joinAny) {
+                    const friendId = prompt("Введите Peer ID другого пользователя:");
+                    if (friendId && friendId !== myId) connectToPeer(friendId);
+                }
+            }, 500);
+        });
+
+        peer.on('connection', (conn) => {
+            // Входящее data соединение
+            setupDataConnection(conn);
+        });
+
+        peer.on('call', (call) => {
+            // Входящий звонок
+            handleIncomingCall(call);
+        });
+
+        peer.on('error', (err) => {
+            console.error("Peer error:", err);
+            peerStatusSpan.innerText = '⚠️ Ошибка соединения';
+            if(err.type === 'unavailable-id') alert("Ошибка: ID занят, перезагрузите страницу");
+        });
+    }
+
+    // Настройка dataConnection (обмен сообщениями)
+    function setupDataConnection(conn) {
+        const peerId = conn.peer;
+        connections[peerId] = conn;
+        allPeerIds.add(peerId);
+        updatePeerListDisplay();
+
+        conn.on('data', (data) => {
+            handleIncomingData(data, peerId);
+        });
+
+        conn.on('close', () => {
+            removePeer(peerId);
+        });
+
+        conn.on('error', (err) => {
+            console.warn(`Ошибка соединения с ${peerId}`, err);
+            removePeer(peerId);
+        });
+
+        // Приветственное сообщение новому пиру
+        conn.send({ type: 'system', text: `${randomName} присоединился к чату`, senderName: "Система" });
+        // Отправить историю (не храним, но можно)
+    }
+
+    function connectToPeer(peerId) {
+        if (peerId === myId) {
+            alert("Нельзя подключиться к самому себе");
+            return;
+        }
+        if (connections[peerId]) {
+            alert("Уже подключены");
+            return;
+        }
+        const conn = peer.connect(peerId);
+        setupDataConnection(conn);
+        // Отправить рукопожатие
+        conn.on('open', () => {
+            conn.send({ type: 'user_join', userName: randomName, text: `${randomName} подключился` });
+            addSystemMessage(`🔌 Подключено к ${peerId}`);
+        });
+    }
+
+    function removePeer(peerId) {
+        if (connections[peerId]) {
+            connections[peerId].close();
+            delete connections[peerId];
+        }
+        allPeerIds.delete(peerId);
+        if (mediaConnections[peerId]) {
+            mediaConnections[peerId].close();
+            delete mediaConnections[peerId];
+        }
+        if (currentCallPeerId === peerId && currentCallActive) {
+            endCall();
+        }
+        updatePeerListDisplay();
+        addSystemMessage(`🔌 Пользователь ${peerId} отключился`);
+    }
+
+    function updatePeerListDisplay() {
+        const count = Object.keys(connections).length;
+        if (count === 0) peerStatusSpan.innerHTML = "📡 Нет подключённых пиров. Добавьте друга по ID.";
+        else peerStatusSpan.innerHTML = `👥 Пиров онлайн: ${count} (${Array.from(allPeerIds).slice(0,3).join(", ")}${count>3?"...":""})`;
+    }
+
+    // Обработка входящих сообщений
+    function handleIncomingData(data, fromId) {
+        if (data.type === 'chat') {
+            addMessage(data.senderName || fromId.slice(0,8), data.text, false);
+        } else if (data.type === 'system') {
+            addSystemMessage(data.text);
+        } else if (data.type === 'user_join') {
+            addSystemMessage(`👋 ${data.userName || fromId} присоединился к чату`);
+        } else if (data.type === 'call_offer_notify') {
+            // Уведомление о том, что кто-то начал звонок (не обязательно, но для UX)
+            if (!currentCallActive) {
+                addSystemMessage(`📞 ${data.callerName || fromId} звонит... Используйте кнопку ответа? (Автоответ)`, true);
+            }
+        }
+    }
+
+    // Отправка сообщения всем
+    function broadcastMessage(text, senderId = myId, senderName = randomName) {
+        const messagePacket = { type: 'chat', text: text, senderName: senderName, senderId: senderId };
+        for (let id in connections) {
+            try {
+                connections[id].send(messagePacket);
+            } catch(e) { console.warn(e); }
+        }
+        // Добавляем сообщение в свой чат
+        addMessage(senderName, text, true);
+    }
+
+    function addMessage(sender, text, isOwn = false) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isOwn ? 'own' : ''}`;
+        msgDiv.innerHTML = `<div class="message-header">${escapeHtml(sender)}</div><div class="message-text">${escapeHtml(text)}</div>`;
+        messagesContainer.appendChild(msgDiv);
+        msgDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function addSystemMessage(text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message`;
+        msgDiv.style.background = "#1e1f22";
+        msgDiv.style.border = "1px solid #2b2d31";
+        msgDiv.innerHTML = `<div class="message-header">🖥️ Система</div><div class="message-text">${escapeHtml(text)}</div>`;
+        messagesContainer.appendChild(msgDiv);
+        msgDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // ------------------- Звонки (WebRTC Audio) -------------------
+    async function startCall() {
+        if (currentCallActive) {
+            alert("Уже в звонке");
+            return;
+        }
+        if (Object.keys(connections).length === 0) {
+            alert("Нет активных пиров, чтобы позвонить. Сначала подключитесь.");
+            return;
+        }
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            currentCallActive = true;
+            callBtn.style.display = "none";
+            hangupBtn.style.display = "flex";
+            callOverlay.style.display = "flex";
+
+            // Позвонить всем подключённым пирам (групповой звонок — в p2p каждому отдельно)
+            for (let peerId in connections) {
+                const mediaConnection = peer.call(peerId, localStream);
+                setupMediaConnection(mediaConnection, peerId);
+                mediaConnections[peerId] = mediaConnection;
+                // отправить сигнал о звонке через data канал
+                connections[peerId].send({ type: 'call_offer_notify', callerName: randomName });
+            }
+            addSystemMessage("📞 Звонок начат для всех участников...");
+        } catch (err) {
+            console.error("Ошибка доступа к микрофону", err);
+            alert("Не удалось получить доступ к микрофону");
+            endCall();
+        }
+    }
+
+    function handleIncomingCall(call) {
+        if (currentCallActive) {
+            // уже в звонке, отклоним новый
+            call.close();
+            return;
+        }
+        const confirmCall = confirm(`Входящий звонок от ${call.peer}. Принять?`);
+        if (confirmCall) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((stream) => {
+                    localStream = stream;
+                    currentCallActive = true;
+                    callBtn.style.display = "none";
+                    hangupBtn.style.display = "flex";
+                    callOverlay.style.display = "flex";
+                    call.answer(stream);
+                    setupMediaConnection(call, call.peer);
+                    mediaConnections[call.peer] = call;
+                    addSystemMessage(`🔊 Звонок с ${call.peer} начат`);
+                })
+                .catch((err) => {
+                    console.error("Микрофон отклонен", err);
+                    call.close();
+                });
+        } else {
+            call.close();
+        }
+    }
+
+    function setupMediaConnection(mediaConn, peerId) {
+        mediaConn.on('stream', (remoteStream) => {
+            // Воспроизводим удаленный звук
+            if (!audioElements[peerId]) {
+                const audioEl = new Audio();
+                audioEl.srcObject = remoteStream;
+                audioEl.autoplay = true;
+                audioElements[peerId] = audioEl;
+                audioEl.play().catch(e=>console.warn);
+                addSystemMessage(`🎧 Аудио от ${peerId} подключено`);
+            } else {
+                audioElements[peerId].srcObject = remoteStream;
+            }
+        });
+        mediaConn.on('close', () => {
+            if (audioElements[peerId]) {
+                audioElements[peerId].pause();
+                delete audioElements[peerId];
+            }
+            addSystemMessage(`🔇 Звонок с ${peerId} завершён`);
+        });
+        mediaConn.on('error', (err) => {
+            console.warn("Media error", err);
+        });
+    }
+
+    function endCall() {
+        // закрыть все медиа-соединения
+        for (let id in mediaConnections) {
+            try {
+                mediaConnections[id].close();
+            } catch(e) {}
+            if (audioElements[id]) {
+                audioElements[id].pause();
+                delete audioElements[id];
+            }
+        }
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        mediaConnections = {};
+        currentCallActive = false;
+        currentCallPeerId = null;
+        callBtn.style.display = "flex";
+        hangupBtn.style.display = "none";
+        callOverlay.style.display = "none";
+        addSystemMessage("Звонок завершён");
+    }
+
+    // Добавление пира вручную (плюс в интерфейсе)
+    function promptAddPeer() {
+        const newPeerId = prompt("Введите Peer ID для подключения:");
+        if (newPeerId && newPeerId !== myId && !connections[newPeerId]) {
+            connectToPeer(newPeerId);
+        } else if (newPeerId === myId) alert("Это ваш ID");
+        else if (connections[newPeerId]) alert("Уже подключены");
+    }
+
+    // Инициализация UI
+    function initUI() {
+        sendBtn.addEventListener('click', () => {
+            const text = messageInput.value.trim();
+            if (text && Object.keys(connections).length > 0) {
+                broadcastMessage(text);
+                messageInput.value = '';
+            } else if (text && Object.keys(connections).length === 0) {
+                alert("Нет подключённых пиров. Сначала добавьте друга через ID (кнопка внизу или консоль)");
+                promptAddPeer();
+            } else if (!text) return;
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+
+        callBtn.addEventListener('click', startCall);
+        hangupBtn.addEventListener('click', endCall);
+        endCallOverlayBtn.addEventListener('click', endCall);
+
+        // Добавляем кнопку в sidebar для приглашения (имитация)
+        const addServerDiv = document.createElement('div');
+        addServerDiv.className = 'server-icon';
+        addServerDiv.innerText = '+';
+        addServerDiv.title = "Добавить пира по ID";
+        addServerDiv.style.background = "#2b2d31";
+        addServerDiv.onclick = promptAddPeer;
+        document.querySelector('.sidebar').appendChild(addServerDiv);
+
+        // Также отображаем подсказку кликабельную в peer-info
+        const peerInfoDiv = document.querySelector('.peer-info');
+        const addHint = document.createElement('span');
+        addHint.innerText = " ➕ Добавить друга";
+        addHint.style.cursor = "pointer";
+        addHint.style.marginLeft = "8px";
+        addHint.style.color = "#5865f2";
+        addHint.onclick = promptAddPeer;
+        peerInfoDiv.appendChild(addHint);
+    }
+
+    // Запуск
+    initPeer();
+    initUI();
+
+    // Доп. для групповой динамики: сообщаем о существующих пирах при новом подключении
+    window.connectToPeer = connectToPeer; // debug
+</script>
 </body>
 </html>
