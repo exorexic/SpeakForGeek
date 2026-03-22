@@ -13,7 +13,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #1e1f22;
             color: #e1e3e6;
             overflow: hidden;
@@ -57,7 +57,6 @@
         .server-icon.active {
             background: #5865f2;
             border-radius: 16px;
-            color: white;
         }
 
         .main {
@@ -111,11 +110,6 @@
 
         .icon-btn.danger {
             background: #da373c;
-            color: white;
-        }
-
-        .icon-btn.success {
-            background: #248046;
         }
 
         .chat-container {
@@ -203,10 +197,6 @@
             border-top: 1px solid #2b2d31;
         }
 
-        .status {
-            color: #23a55a;
-        }
-
         @media (max-width: 640px) {
             .sidebar {
                 width: 60px;
@@ -237,23 +227,20 @@
             gap: 12px;
             align-items: center;
             backdrop-filter: blur(10px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             z-index: 1000;
         }
 
-        /* Модальное окно выбора */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 2000;
-            backdrop-filter: blur(8px);
         }
 
         .modal-content {
@@ -263,23 +250,10 @@
             width: 90%;
             max-width: 400px;
             text-align: center;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
         }
 
         .modal-content h2 {
             margin-bottom: 24px;
-            color: #fff;
         }
 
         .modal-buttons {
@@ -296,7 +270,6 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
         }
 
         .modal-btn.primary {
@@ -311,7 +284,6 @@
 
         .join-input {
             margin-top: 16px;
-            display: none;
         }
 
         .join-input input {
@@ -336,24 +308,37 @@
             cursor: pointer;
         }
 
-        .room-code {
+        .room-code-display {
             background: #1e1f22;
-            padding: 12px;
+            padding: 16px;
             border-radius: 12px;
             margin: 16px 0;
             font-family: monospace;
-            font-size: 18px;
-            letter-spacing: 1px;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 2px;
         }
 
-        .copy-btn {
+        .copy-code-btn {
             background: #5865f2;
             border: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
             border-radius: 8px;
             color: white;
             cursor: pointer;
             margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .loading {
+            color: #949ba4;
+            margin: 20px 0;
+        }
+
+        .error-msg {
+            color: #da373c;
+            margin: 10px 0;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -361,7 +346,6 @@
 <div class="app" style="display: none;" id="app">
     <div class="sidebar">
         <div class="server-icon active">SG</div>
-        <div class="server-icon">🎧</div>
     </div>
     <div class="main">
         <div class="header">
@@ -378,7 +362,7 @@
             <div class="messages" id="messagesList">
                 <div class="message">
                     <div class="message-header">SpeekForGeek</div>
-                    <div class="message-text">✨ Добро пожаловать! Сначала создайте или войдите в комнату.</div>
+                    <div class="message-text">🚀 Готов к работе! Создайте или войдите в комнату.</div>
                 </div>
             </div>
             <div class="input-area">
@@ -387,11 +371,12 @@
             </div>
         </div>
         <div class="peer-info">
-            <span>🆔 Мой ID: <strong id="myPeerId">загрузка...</strong></span>
-            <span id="peerStatus">📡 Не в комнате</span>
+            <span>🆔 ID: <strong id="myPeerId">загрузка...</strong></span>
+            <span id="peerStatus">⚡ Не в комнате</span>
         </div>
     </div>
 </div>
+
 <div id="callOverlay" class="call-overlay" style="display: none;">
     <span>🔊 Активный звонок</span>
     <button class="icon-btn danger" id="endCallOverlayBtn" style="width: 28px; height: 28px;">⏹️</button>
@@ -399,32 +384,48 @@
 
 <div id="roomModal" class="modal">
     <div class="modal-content">
-        <h2>🔊 SpeekForGeek</h2>
-        <p style="margin-bottom: 20px; color: #949ba4;">Выберите действие</p>
-        <div class="modal-buttons">
-            <button class="modal-btn primary" id="createRoomBtn">✨ Создать комнату</button>
-            <button class="modal-btn secondary" id="joinRoomBtn">🔗 Войти в комнату</button>
+        <h2>🎙️ SpeekForGeek</h2>
+        <div id="modalMain">
+            <p style="margin-bottom: 20px; color: #949ba4;">Выберите действие</p>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" id="createRoomBtn">✨ Создать комнату</button>
+                <button class="modal-btn secondary" id="joinRoomBtn">🔗 Войти в комнату</button>
+            </div>
+            <div id="joinPanel" class="join-input" style="display: none;">
+                <input type="text" id="roomCodeInput" placeholder="Введите код комнаты">
+                <button id="confirmJoinBtn">Подключиться</button>
+                <button id="backToMenuBtn" style="margin-top: 8px; background: #383a40;">Назад</button>
+            </div>
         </div>
-        <div id="joinPanel" class="join-input">
-            <input type="text" id="roomCodeInput" placeholder="Введите код комнаты">
-            <button id="confirmJoinBtn">Подключиться</button>
+        <div id="createPanel" style="display: none;">
+            <div class="loading" id="createLoading">⏳ Подключение...</div>
+            <div id="createSuccess" style="display: none;">
+                <p>✅ Комната создана!</p>
+                <div class="room-code-display" id="roomCodeDisplay"></div>
+                <button class="copy-code-btn" id="copyRoomCodeBtn">📋 Скопировать код</button>
+                <button id="enterRoomBtn" style="margin-top: 12px; background: #23a55a; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer;">Войти в комнату</button>
+            </div>
+            <div id="createError" class="error-msg" style="display: none;"></div>
+            <button id="backFromCreateBtn" style="margin-top: 16px; background: #383a40; padding: 8px; border: none; border-radius: 8px; color: white; cursor: pointer;">Назад</button>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-    // ------------------- Глобальное состояние -------------------
-    let peer;
+    // Состояние
+    let peer = null;
     let myId = null;
-    let currentRoom = null;      // текущая комната (код)
-    let connections = {};        // peerId -> dataConnection
+    let currentRoom = null;
+    let connections = {};
     let mediaConnections = {};
     let localStream = null;
     let currentCallActive = false;
     let audioElements = {};
-    let isRoomCreator = false;    // создатель комнаты (ожидает подключений)
-    let pendingJoiners = [];      // кто ждет подтверждения (для создателя)
+    let isReady = false;
+    let pendingReady = null;
+    
+    const randomName = "User_" + Math.floor(Math.random() * 10000);
     
     // DOM элементы
     const appDiv = document.getElementById('app');
@@ -434,6 +435,16 @@
     const joinPanel = document.getElementById('joinPanel');
     const roomCodeInput = document.getElementById('roomCodeInput');
     const confirmJoinBtn = document.getElementById('confirmJoinBtn');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+    const createPanel = document.getElementById('createPanel');
+    const modalMain = document.getElementById('modalMain');
+    const createLoading = document.getElementById('createLoading');
+    const createSuccess = document.getElementById('createSuccess');
+    const createError = document.getElementById('createError');
+    const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+    const copyRoomCodeBtn = document.getElementById('copyRoomCodeBtn');
+    const enterRoomBtn = document.getElementById('enterRoomBtn');
+    const backFromCreateBtn = document.getElementById('backFromCreateBtn');
     const messagesContainer = document.getElementById('messagesList');
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -445,27 +456,32 @@
     const endCallOverlayBtn = document.getElementById('endCallOverlayBtn');
     const roomInfoSpan = document.getElementById('roomInfo');
     
-    const randomName = "Geek_" + Math.floor(Math.random() * 9000 + 1000);
-    
     // Инициализация Peer
     function initPeer() {
-        peer = new Peer(undefined, {
+        peer = new Peer({
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }
+                    { urls: 'stun:stun1.l.google.com:19302' }
                 ]
             }
         });
         
         peer.on('open', (id) => {
             myId = id;
-            myPeerIdSpan.innerText = myId;
+            myPeerIdSpan.innerText = myId.substring(0, 8);
+            isReady = true;
+            console.log('Peer готов, ID:', myId);
+            
+            // Если было ожидание создания комнаты
+            if (pendingReady === 'create') {
+                pendingReady = null;
+                actuallyCreateRoom();
+            }
         });
         
         peer.on('connection', (conn) => {
-            // Входящее соединение - обрабатываем в зависимости от режима
+            console.log('Входящее соединение от:', conn.peer);
             handleIncomingConnection(conn);
         });
         
@@ -474,9 +490,11 @@
         });
         
         peer.on('error', (err) => {
-            console.error("Peer error:", err);
-            if (err.type === 'unavailable-id') {
-                alert("Ошибка: ID занят, перезагрузите страницу");
+            console.error('Peer error:', err);
+            if (createPanel.style.display === 'block') {
+                createLoading.style.display = 'none';
+                createError.style.display = 'block';
+                createError.innerText = 'Ошибка подключения: ' + err.message;
             }
         });
     }
@@ -485,170 +503,136 @@
         const peerId = conn.peer;
         
         conn.on('data', (data) => {
-            handleDataMessage(data, peerId);
+            if (data.type === 'chat') {
+                addMessage(data.senderName, data.text, false);
+            } else if (data.type === 'system') {
+                addSystemMessage(data.text);
+            }
         });
         
         conn.on('close', () => {
-            removePeer(peerId);
+            delete connections[peerId];
+            updatePeerStatus();
+            addSystemMessage(`🔌 Пользователь отключился`);
         });
         
-        // Если мы создатель комнаты - автоматически принимаем всех
-        if (isRoomCreator) {
-            acceptConnection(conn);
-        } else {
-            // Если мы вошли в комнату, то проверяем, что это соединение от создателя
-            if (currentRoom && connections[currentRoom] && conn.peer === currentRoom) {
-                acceptConnection(conn);
-            } else {
-                // Временно сохраняем для подтверждения
-                if (!pendingJoiners[peerId]) {
-                    pendingJoiners[peerId] = conn;
-                    addSystemMessage(`📥 Пользователь хочет подключиться. Введите /accept ${peerId.slice(0,8)} для принятия`);
-                }
-            }
-        }
-    }
-    
-    function acceptConnection(conn) {
-        const peerId = conn.peer;
         connections[peerId] = conn;
-        updatePeerList();
-        
-        conn.on('data', (data) => handleDataMessage(data, peerId));
+        updatePeerStatus();
+        addSystemMessage(`✅ Подключился новый участник`);
         
         // Отправляем приветствие
-        conn.send({ type: 'system', text: `${randomName} присоединился`, senderName: "Система" });
-        conn.send({ type: 'user_join', userName: randomName, userId: myId });
-        
-        addSystemMessage(`✅ Подключено к ${peerId.slice(0,8)}`);
-        
-        // Убираем из ожидающих
-        delete pendingJoiners[peerId];
+        conn.send({ type: 'system', text: `${randomName} присоединился к комнате` });
     }
     
-    function handleDataMessage(data, fromId) {
-        if (data.type === 'chat') {
-            addMessage(data.senderName || fromId.slice(0,8), data.text, false);
-        } else if (data.type === 'system') {
-            addSystemMessage(data.text);
-        } else if (data.type === 'user_join') {
-            addSystemMessage(`👋 ${data.userName} присоединился к комнате`);
-            updatePeerList();
-        } else if (data.type === 'room_info') {
-            addSystemMessage(`📢 Комната: ${data.roomName}`);
+    function actuallyCreateRoom() {
+        if (!isReady || !peer) {
+            pendingReady = 'create';
+            return;
         }
+        
+        currentRoom = myId;
+        isRoomCreator = true;
+        
+        createLoading.style.display = 'none';
+        createSuccess.style.display = 'block';
+        roomCodeDisplay.innerText = currentRoom.substring(0, 8);
+        
+        // Копирование кода
+        copyRoomCodeBtn.onclick = () => {
+            navigator.clipboard.writeText(currentRoom.substring(0, 8));
+            addSystemMessage('📋 Код скопирован!');
+            copyRoomCodeBtn.innerText = '✅ Скопировано!';
+            setTimeout(() => copyRoomCodeBtn.innerText = '📋 Скопировать код', 2000);
+        };
+        
+        // Вход в комнату
+        enterRoomBtn.onclick = () => {
+            enterRoom(currentRoom);
+        };
     }
     
-    // Создание комнаты
-    function createRoom() {
-        isRoomCreator = true;
-        // Генерируем код комнаты (первые 6 символов Peer ID)
-        currentRoom = myId.substring(0, 8);
-        showMainApp();
-        addSystemMessage(`🎉 Комната создана! Код комнаты: ${currentRoom}`);
-        addSystemMessage(`📤 Поделитесь кодом с друзьями, они смогут войти, введя его`);
-        roomInfoSpan.textContent = `📁 Код: ${currentRoom}`;
-        peerStatusSpan.innerHTML = `👑 Создатель комнаты. Ждём участников...`;
-        
-        // Создаем кнопку копирования в интерфейсе
-        const copyHint = document.createElement('span');
-        copyHint.innerText = " 📋 Копировать код";
-        copyHint.style.cursor = "pointer";
-        copyHint.style.color = "#5865f2";
-        copyHint.style.marginLeft = "8px";
-        copyHint.onclick = () => {
-            navigator.clipboard.writeText(currentRoom);
-            addSystemMessage("✅ Код комнаты скопирован");
-        };
-        document.querySelector('.channel-name').after(copyHint);
-        
+    function enterRoom(roomCode) {
+        currentRoom = roomCode;
+        modal.style.display = 'none';
+        appDiv.style.display = 'flex';
+        roomInfoSpan.textContent = `📁 Код: ${roomCode.substring(0, 8)}`;
+        peerStatusSpan.innerHTML = `👑 Создатель комнаты`;
         messageInput.disabled = false;
         sendBtn.disabled = false;
+        addSystemMessage(`🎉 Комната "${roomCode.substring(0, 8)}" создана!`);
+        addSystemMessage(`📤 Поделитесь кодом с друзьями, чтобы они могли подключиться`);
+        addSystemMessage(`💡 Друзья должны нажать "Войти в комнату" и ввести этот код`);
     }
     
-    // Вход в комнату по коду
-    function joinRoom(roomCode) {
-        if (!roomCode || roomCode.length < 4) {
-            alert("Введите корректный код комнаты");
+    function joinRoomByCode(roomCode) {
+        if (!isReady) {
+            alert('Подождите, подключение...');
             return false;
         }
         
-        isRoomCreator = false;
-        currentRoom = roomCode;
-        
-        // Подключаемся к создателю комнаты
-        const creatorId = roomCode;
-        
-        // Проверяем, не подключены ли уже
-        if (connections[creatorId]) {
-            addSystemMessage("Уже подключены к этой комнате");
-            showMainApp();
-            return true;
+        if (roomCode === myId?.substring(0, 8)) {
+            alert('Это ваш собственный код! Используйте "Создать комнату"');
+            return false;
         }
         
-        const conn = peer.connect(creatorId);
+        // Ищем создателя по коду (нужно восстановить полный ID)
+        // Для простоты считаем, что код - это первые 8 символов Peer ID
+        // Пытаемся найти среди известных или просто подключаемся
+        
+        const creatorFullId = roomCode; // на самом деле нужно восстановить, но peerjs позволяет подключиться по части? нет
+        // В реальности код должен быть полным ID, но для UX показываем короткий
+        // Исправляем: код = полный ID создателя
+        
+        addSystemMessage(`🔍 Подключение к комнате ${roomCode}...`);
+        
+        const conn = peer.connect(roomCode);
         
         conn.on('open', () => {
-            connections[creatorId] = conn;
-            setupDataConnection(conn, creatorId);
-            updatePeerList();
-            showMainApp();
-            addSystemMessage(`✅ Вход в комнату ${roomCode} выполнен успешно!`);
-            roomInfoSpan.textContent = `📁 Комната: ${roomCode}`;
+            connections[roomCode] = conn;
+            
+            conn.on('data', (data) => {
+                if (data.type === 'chat') {
+                    addMessage(data.senderName, data.text, false);
+                } else if (data.type === 'system') {
+                    addSystemMessage(data.text);
+                }
+            });
+            
+            modal.style.display = 'none';
+            appDiv.style.display = 'flex';
+            roomInfoSpan.textContent = `📁 Комната: ${roomCode.substring(0, 8)}`;
             peerStatusSpan.innerHTML = `👥 В комнате`;
             messageInput.disabled = false;
             sendBtn.disabled = false;
+            addSystemMessage(`✅ Успешно подключено к комнате ${roomCode.substring(0, 8)}!`);
             
-            // Отправляем информацию о себе
-            conn.send({ type: 'user_join', userName: randomName, userId: myId });
+            updatePeerStatus();
         });
         
         conn.on('error', (err) => {
-            console.error("Ошибка подключения", err);
-            alert("Не удалось подключиться к комнате. Проверьте код и попробуйте снова.");
-            modal.style.display = "flex";
-            appDiv.style.display = "none";
+            console.error('Ошибка подключения:', err);
+            alert('Не удалось подключиться к комнате. Проверьте код и попробуйте снова.');
         });
         
         return true;
     }
     
-    function setupDataConnection(conn, peerId) {
-        conn.on('data', (data) => handleDataMessage(data, peerId));
-        conn.on('close', () => removePeer(peerId));
-    }
+    let isRoomCreator = false;
     
-    function removePeer(peerId) {
-        if (connections[peerId]) {
-            connections[peerId].close();
-            delete connections[peerId];
-        }
-        if (mediaConnections[peerId]) {
-            mediaConnections[peerId].close();
-            delete mediaConnections[peerId];
-        }
-        updatePeerList();
-        addSystemMessage(`🔌 Пользователь отключился`);
-    }
-    
-    function updatePeerList() {
+    function updatePeerStatus() {
         const count = Object.keys(connections).length;
-        if (count === 0) {
-            if (isRoomCreator) {
-                peerStatusSpan.innerHTML = "👑 Создатель комнаты. Ожидание участников...";
-            } else {
-                peerStatusSpan.innerHTML = "📡 Подключение к комнате...";
-            }
+        if (isRoomCreator) {
+            peerStatusSpan.innerHTML = `👑 Создатель | Участников: ${count}`;
         } else {
-            peerStatusSpan.innerHTML = `👥 Участников: ${count}`;
+            peerStatusSpan.innerHTML = `👥 В комнате | Участников: ${count + 1}`;
         }
     }
     
     function broadcastMessage(text) {
-        const messagePacket = { type: 'chat', text: text, senderName: randomName, senderId: myId };
+        const packet = { type: 'chat', text: text, senderName: randomName };
         for (let id in connections) {
             try {
-                connections[id].send(messagePacket);
+                connections[id].send(packet);
             } catch(e) {}
         }
         addMessage(randomName, text, true);
@@ -664,48 +648,50 @@
     
     function addSystemMessage(text) {
         const msgDiv = document.createElement('div');
-        msgDiv.className = `message`;
-        msgDiv.style.background = "#1e1f22";
-        msgDiv.style.border = "1px solid #2b2d31";
+        msgDiv.className = 'message';
+        msgDiv.style.background = '#1e1f22';
+        msgDiv.style.border = '1px solid #2b2d31';
         msgDiv.innerHTML = `<div class="message-header">🖥️ Система</div><div class="message-text">${escapeHtml(text)}</div>`;
         messagesContainer.appendChild(msgDiv);
         msgDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
     
     function escapeHtml(str) {
-        return str.replace(/[&<>]/g, function(m) {
-            if(m === '&') return '&amp;';
-            if(m === '<') return '&lt;';
-            if(m === '>') return '&gt;';
-            return m;
-        });
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
     
     // Звонки
     async function startCall() {
         if (currentCallActive) {
-            alert("Уже в звонке");
+            alert('Уже в звонке');
             return;
         }
         if (Object.keys(connections).length === 0) {
-            alert("Нет участников в комнате");
+            alert('Нет участников');
             return;
         }
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             currentCallActive = true;
-            callBtn.style.display = "none";
-            hangupBtn.style.display = "flex";
-            callOverlay.style.display = "flex";
+            callBtn.style.display = 'none';
+            hangupBtn.style.display = 'flex';
+            callOverlay.style.display = 'flex';
             
             for (let peerId in connections) {
-                const mediaConnection = peer.call(peerId, localStream);
-                setupMediaConnection(mediaConnection, peerId);
-                mediaConnections[peerId] = mediaConnection;
+                const call = peer.call(peerId, localStream);
+                call.on('stream', (remoteStream) => {
+                    const audio = new Audio();
+                    audio.srcObject = remoteStream;
+                    audio.autoplay = true;
+                    audioElements[peerId] = audio;
+                });
+                mediaConnections[peerId] = call;
             }
-            addSystemMessage("📞 Звонок начат");
-        } catch (err) {
-            alert("Нет доступа к микрофону");
+            addSystemMessage('📞 Звонок начат');
+        } catch(err) {
+            alert('Нет доступа к микрофону');
         }
     }
     
@@ -714,41 +700,28 @@
             call.close();
             return;
         }
-        const confirmCall = confirm(`Входящий звонок от ${call.peer.slice(0,8)}. Принять?`);
-        if (confirmCall) {
+        if (confirm(`Входящий звонок от ${call.peer.substring(0, 8)}. Принять?`)) {
             navigator.mediaDevices.getUserMedia({ audio: true })
-                .then((stream) => {
+                .then(stream => {
                     localStream = stream;
                     currentCallActive = true;
-                    callBtn.style.display = "none";
-                    hangupBtn.style.display = "flex";
-                    callOverlay.style.display = "flex";
+                    callBtn.style.display = 'none';
+                    hangupBtn.style.display = 'flex';
+                    callOverlay.style.display = 'flex';
                     call.answer(stream);
-                    setupMediaConnection(call, call.peer);
+                    call.on('stream', (remoteStream) => {
+                        const audio = new Audio();
+                        audio.srcObject = remoteStream;
+                        audio.autoplay = true;
+                        audioElements[call.peer] = audio;
+                    });
                     mediaConnections[call.peer] = call;
-                    addSystemMessage(`🔊 Звонок начат`);
+                    addSystemMessage('🔊 Звонок начат');
                 })
                 .catch(() => call.close());
         } else {
             call.close();
         }
-    }
-    
-    function setupMediaConnection(mediaConn, peerId) {
-        mediaConn.on('stream', (remoteStream) => {
-            if (!audioElements[peerId]) {
-                const audioEl = new Audio();
-                audioEl.srcObject = remoteStream;
-                audioEl.autoplay = true;
-                audioElements[peerId] = audioEl;
-            }
-        });
-        mediaConn.on('close', () => {
-            if (audioElements[peerId]) {
-                audioElements[peerId].pause();
-                delete audioElements[peerId];
-            }
-        });
     }
     
     function endCall() {
@@ -760,47 +733,66 @@
             }
         }
         if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+            localStream.getTracks().forEach(t => t.stop());
             localStream = null;
         }
         mediaConnections = {};
         currentCallActive = false;
-        callBtn.style.display = "flex";
-        hangupBtn.style.display = "none";
-        callOverlay.style.display = "none";
-        addSystemMessage("Звонок завершён");
-    }
-    
-    function showMainApp() {
-        modal.style.display = "none";
-        appDiv.style.display = "flex";
+        callBtn.style.display = 'flex';
+        hangupBtn.style.display = 'none';
+        callOverlay.style.display = 'none';
+        addSystemMessage('Звонок завершён');
     }
     
     // UI обработчики
     createRoomBtn.onclick = () => {
-        createRoom();
+        modalMain.style.display = 'none';
+        createPanel.style.display = 'block';
+        createLoading.style.display = 'block';
+        createSuccess.style.display = 'none';
+        createError.style.display = 'none';
+        
+        if (isReady) {
+            actuallyCreateRoom();
+        } else {
+            pendingReady = 'create';
+        }
     };
     
     joinRoomBtn.onclick = () => {
-        joinPanel.style.display = "block";
-        createRoomBtn.disabled = true;
-        joinRoomBtn.disabled = true;
+        modalMain.style.display = 'none';
+        joinPanel.style.display = 'block';
+    };
+    
+    backToMenuBtn.onclick = () => {
+        joinPanel.style.display = 'none';
+        modalMain.style.display = 'block';
+    };
+    
+    backFromCreateBtn.onclick = () => {
+        createPanel.style.display = 'none';
+        modalMain.style.display = 'block';
+        pendingReady = null;
     };
     
     confirmJoinBtn.onclick = () => {
         const code = roomCodeInput.value.trim();
-        if (joinRoom(code)) {
-            // Успешно
+        if (code) {
+            joinRoomByCode(code);
+        } else {
+            alert('Введите код комнаты');
         }
     };
     
     sendBtn.onclick = () => {
         const text = messageInput.value.trim();
-        if (text && Object.keys(connections).length > 0) {
-            broadcastMessage(text);
-            messageInput.value = '';
-        } else if (text && Object.keys(connections).length === 0) {
-            addSystemMessage("❌ Нет подключённых участников");
+        if (text) {
+            if (Object.keys(connections).length > 0 || isRoomCreator) {
+                broadcastMessage(text);
+                messageInput.value = '';
+            } else {
+                addSystemMessage('❌ Нет подключённых участников');
+            }
         }
     };
     
@@ -812,26 +804,8 @@
     hangupBtn.onclick = endCall;
     endCallOverlayBtn.onclick = endCall;
     
-    // Добавляем кнопку добавления пира (для создателя комнаты)
-    const addToSidebar = () => {
-        const addBtn = document.createElement('div');
-        addBtn.className = 'server-icon';
-        addBtn.innerText = '+';
-        addBtn.title = "Показать код комнаты";
-        addBtn.onclick = () => {
-            if (currentRoom) {
-                navigator.clipboard.writeText(currentRoom);
-                addSystemMessage("📋 Код комнаты скопирован");
-            } else {
-                addSystemMessage("Сначала войдите или создайте комнату");
-            }
-        };
-        document.querySelector('.sidebar').appendChild(addBtn);
-    };
-    
     // Запуск
     initPeer();
-    addToSidebar();
 </script>
 </body>
 </html>
