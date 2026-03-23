@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Speak For Geek</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0c10;
+            color: #e0e0e0;
+            padding-bottom: 70px;
+        }
+        .header {
+            background: #111214;
+            padding: 12px 16px;
+            border-bottom: 1px solid #1e1f22;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 20px; }
+        .header h1 span { color: #5865f2; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111214;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 12px;
+            border-top: 1px solid #1e1f22;
+            z-index: 100;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #949ba4;
+            font-size: 24px;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 12px;
+        }
+        .nav-btn.active { color: #5865f2; background: #1e1f22; }
+        .content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        .post-form {
+            background: #111214;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #1e1f22;
+        }
+        .post-form textarea {
+            width: 100%;
+            padding: 12px;
+            background: #1e1f22;
+            border: none;
+            border-radius: 12px;
+            color: #e0e0e0;
+            font-size: 15px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .post-card {
+            background: #111214;
+            border: 1px solid #1e1f22;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .post-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #2b2d31;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .post-author { font-weight: 600; }
+        .post-time { font-size: 11px; color: #949ba4; }
+        .post-content { margin: 8px 0; line-height: 1.4; }
+        .post-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #1e1f22;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            color: #949ba4;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .action-btn.liked { color: #5865f2; }
+        .comment {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .comment-content {
+            background: #1e1f22;
+            padding: 8px 12px;
+            border-radius: 16px;
+            flex: 1;
+        }
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            background: #111214;
+            border-radius: 32px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .auth-card input {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            background: #1e1f22;
+            border: none;
+            border-radius: 16px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+        .auth-card button {
+            width: 100%;
+            padding: 14px;
+            background: #5865f2;
+            border: none;
+            border-radius: 28px;
+            color: white;
+            margin-top: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .switch-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: #5865f2;
+            cursor: pointer;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #949ba4;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #2b2d31;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    
+    <script>
+        // ЗАМЕНИ НА СВОИ ДАННЫЕ ИЗ FIREBASE!
+        <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkh5sTRB1w0OzLvTewRj70Xb-AsvFfNco",
+    authDomain: "speak-for-geek.firebaseapp.com",
+    projectId: "speak-for-geek",
+    storageBucket: "speak-for-geek.firebasestorage.app",
+    messagingSenderId: "686634061106",
+    appId: "1:686634061106:web:4a447aa1c62cd5931b1b2b"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        
+        let currentUser = null;
+        let currentView = 'feed';
+        
+        function render() {
+            const app = document.getElementById('app');
+            if (!currentUser) {
+                app.innerHTML = getAuthHTML();
+                attachAuthEvents();
+            } else {
+                app.innerHTML = getMainHTML();
+                attachNavEvents();
+                loadCurrentView();
+            }
+        }
+        
+        function getAuthHTML() {
+            return `
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <h1 style="margin-bottom: 24px; text-align: center;">🎧 Speak For <span style="color: #5865f2;">Geek</span></h1>
+                        <div id="login-form">
+                            <input type="email" id="login-email" placeholder="Email">
+                            <input type="password" id="login-password" placeholder="Пароль">
+                            <button onclick="login()">Войти</button>
+                            <div class="switch-auth" onclick="showRegister()">Нет аккаунта? Зарегистрироваться</div>
+                        </div>
+                        <div id="register-form" style="display: none;">
+                            <input type="text" id="reg-username" placeholder="Юзернейм">
+                            <input type="email" id="reg-email" placeholder="Email">
+                            <input type="password" id="reg-password" placeholder="Пароль">
+                            <button onclick="register()">Зарегистрироваться</button>
+                            <div class="switch-auth" onclick="showLogin()">Уже есть аккаунт? Войти</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getMainHTML() {
+            return `
+                <div class="header">
+                    <h1>🎧 Speak For <span>Geek</span></h1>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="nav-btn" onclick="logout()" style="font-size: 18px;">🚪</button>
+                    </div>
+                </div>
+                <div class="content" id="content-area">
+                    <div style="text-align: center; padding: 40px;">Загрузка...</div>
+                </div>
+                <div class="bottom-nav">
+                    <button class="nav-btn" id="nav-feed" onclick="setView('feed')">🏠</button>
+                    <button class="nav-btn" id="nav-search" onclick="setView('search')">🔍</button>
+                    <button class="nav-btn" id="nav-friends" onclick="setView('friends')">👥</button>
+                    <button class="nav-btn" id="nav-messages" onclick="setView('messages')">💬</button>
+                    <button class="nav-btn" id="nav-profile" onclick="setView('profile')">👤</button>
+                </div>
+            `;
+        }
+        
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                currentUser = auth.currentUser;
+                render();
+            } catch(e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+        
+        async function register() {
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await db.collection('users').doc(cred.user.uid).set({
+                    username: username,
+                    email: email,
+                    avatar: '👤',
+                    bio: '',
+                    created: new Date()
+                });
+                currentUser = auth.currentUser;
+                render();
+            } catch(e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+        
+        async function logout() {
+            await auth.signOut();
+            currentUser = null;
+            render();
+        }
+        
+        function showRegister() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+        }
+        
+        function showLogin() {
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+        }
+        
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${view}`).classList.add('active');
+            loadCurrentView();
+        }
+        
+        async function loadCurrentView() {
+            if (currentView === 'feed') await loadFeed();
+            else if (currentView === 'search') await loadSearch();
+            else if (currentView === 'friends') await loadFriends();
+            else if (currentView === 'messages') await loadMessages();
+            else if (currentView === 'profile') await loadProfile();
+        }
+        
+        async function loadFeed() {
+            const content = document.getElementById('content-area');
+            const posts = await db.collection('posts').orderBy('created', 'desc').get();
+            let html = `
+                <div class="post-form">
+                    <textarea id="post-content" rows="3" placeholder="Что нового?"></textarea>
+                    <button onclick="createPost()">📤 Опубликовать</button>
+                </div>
+            `;
+            if (posts.empty) html += '<div class="empty-state">📭 Нет постов. Напишите первый!</div>';
+            for (const doc of posts.docs) {
+                const post = doc.data();
+                const userDoc = await db.collection('users').doc(post.userId).get();
+                const user = userDoc.data();
+                html += `
+                    <div class="post-card">
+                        <div class="post-header">
+                            <div class="avatar">${user.avatar || '👤'}</div>
+                            <div>
+                                <div class="post-author">${user.username}</div>
+                                <div class="post-time">${new Date(post.created?.toDate()).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="post-content">${post.content}</div>
+                        <div class="post-actions">
+                            <button class="action-btn" onclick="likePost('${doc.id}')">👍 ${post.likes?.length || 0}</button>
+                        </div>
+                    </div>
+                `;
+            }
+            content.innerHTML = html;
+        }
+        
+        async function createPost() {
+            const content = document.getElementById('post-content').value;
+            if (!content.trim()) return;
+            await db.collection('posts').add({
+                userId: currentUser.uid,
+                content: content,
+                created: new Date(),
+                likes: []
+            });
+            loadFeed();
+        }
+        
+        async function likePost(postId) {
+            const postRef = db.collection('posts').doc(postId);
+            const post = await postRef.get();
+            const likes = post.data().likes || [];
+            if (likes.includes(currentUser.uid)) {
+                await postRef.update({ likes: likes.filter(id => id !== currentUser.uid) });
+            } else {
+                await postRef.update({ likes: [...likes, currentUser.uid] });
+            }
+            loadFeed();
+        }
+        
+        async function loadSearch() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <div class="post-form">
+                    <input type="text" id="search-query" placeholder="Введите юзернейм..." style="width: 100%; padding: 12px; background: #1e1f22; border: none; border-radius: 12px;">
+                    <button onclick="searchUsers()" style="margin-top: 8px;">🔍 Найти</button>
+                </div>
+                <div id="search-results"></div>
+            `;
+        }
+        
+        async function searchUsers() {
+            const query = document.getElementById('search-query').value;
+            const users = await db.collection('users').where('username', '>=', query).where('username', '<=', query + '\uf8ff').get();
+            let html = '';
+            users.forEach(doc => {
+                const user = doc.data();
+                if (doc.id !== currentUser.uid) {
+                    html += `
+                        <div class="post-card" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 12px;">
+                                <div class="avatar">${user.avatar || '👤'}</div>
+                                <div><strong>@${user.username}</strong></div>
+                            </div>
+                            <button class="action-btn" onclick="followUser('${doc.id}')">+ Подписаться</button>
+                        </div>
+                    `;
+                }
+            });
+            if (!html) html = '<div class="empty-state">👻 Не найдено</div>';
+            document.getElementById('search-results').innerHTML = html;
+        }
+        
+        async function loadFriends() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = '<div class="empty-state">👥 Скоро здесь будут ваши друзья!</div>';
+        }
+        
+        async function loadMessages() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = '<div class="empty-state">💬 Скоро здесь будут сообщения!</div>';
+        }
+        
+        async function loadProfile() {
+            const content = document.getElementById('content-area');
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            const user = userDoc.data();
+            const posts = await db.collection('posts').where('userId', '==', currentUser.uid).get();
+            let html = `
+                <div style="text-align: center; padding: 20px;">
+                    <div class="profile-avatar">${user.avatar || '👤'}</div>
+                    <h2>@${user.username}</h2>
+                    <p style="color: #949ba4;">${user.bio || 'Нет описания'}</p>
+                    <div style="margin: 16px 0;"><strong>${posts.size}</strong> постов</div>
+                </div>
+                <h3 style="margin: 16px 0 8px;">📝 Мои посты</h3>
+            `;
+            posts.forEach(doc => {
+                const post = doc.data();
+                html += `
+                    <div class="post-card">
+                        <div class="post-content">${post.content}</div>
+                        <div class="post-time">${new Date(post.created?.toDate()).toLocaleString()}</div>
+                    </div>
+                `;
+            });
+            content.innerHTML = html;
+        }
+        
+        function attachAuthEvents() {
+            window.login = login;
+            window.register = register;
+            window.showRegister = showRegister;
+            window.showLogin = showLogin;
+        }
+        
+        function attachNavEvents() {
+            window.logout = logout;
+            window.setView = setView;
+            window.createPost = createPost;
+            window.likePost = likePost;
+            window.searchUsers = searchUsers;
+            window.followUser = () => {};
+        }
+        
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            render();
+        });
+    </script>
+</body>
+</html>
